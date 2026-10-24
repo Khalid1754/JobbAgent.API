@@ -10,12 +10,13 @@ interface Props {
   onDelete: (id: string) => Promise<void>
   onAdd: () => void
   onOpenLetter: (runId: string) => void
+  onPrepareInterview: (a: Application) => Promise<void>
 }
 
 const date = (iso: string) => new Date(iso).toLocaleDateString('sv-SE')
 
 // Ansökningstavlan: dra korten mellan kolumnerna eller öppna ett kort för att ändra det.
-export default function Board({ applications, onUpdate, onDelete, onAdd, onOpenLetter }: Props) {
+export default function Board({ applications, onUpdate, onDelete, onAdd, onOpenLetter, onPrepareInterview }: Props) {
   const [editing, setEditing] = useState<Application | null>(null)
   const [over, setOver] = useState<Stage | null>(null)
   const counts = countByStage(applications)
@@ -71,7 +72,8 @@ export default function Board({ applications, onUpdate, onDelete, onAdd, onOpenL
         <ApplicationEditor application={editing} onClose={() => setEditing(null)}
           onSave={async a => { await onUpdate(a); setEditing(null) }}
           onDelete={async () => { await onDelete(editing.id); setEditing(null) }}
-          onOpenLetter={editing.letterRunId ? () => onOpenLetter(editing.letterRunId!) : undefined} />
+          onOpenLetter={editing.letterRunId ? () => onOpenLetter(editing.letterRunId!) : undefined}
+          onPrepareInterview={() => onPrepareInterview(editing)} />
       )}
     </section>
   )

@@ -3,7 +3,8 @@ namespace JobbAgent.Api.Models;
 public enum RunStatus { Queued, Running, Completed, Failed }
 
 // Search = agenterna letar jobb i Platsbanken. Letter = agenterna skriver ett personligt brev till en annons.
-public enum RunKind { Search, Letter }
+// Interview = agenterna förbereder dig inför en intervju.
+public enum RunKind { Search, Letter, Interview }
 
 // Vad som hände i ett steg: en agent börjar, blir klar, lämnar över till nästa eller misslyckas.
 public enum StepKind { Started, Completed, Handoff, Failed }
@@ -38,10 +39,15 @@ public class Run
     public string? PlatsbankenId { get; set; }
     public string Language { get; set; } = "auto";
 
+    // Intervjuförberedelse: brevet den bygger på och jobbet på tavlan den gjordes för.
+    public Guid? SourceRunId { get; set; }
+    public Guid? ApplicationId { get; set; }
+
     // Agenternas resultat, sparat som JSON.
     public string? HitsJson { get; set; }
     public string? RequirementsJson { get; set; }
     public string? MatchJson { get; set; }
+    public string? InterviewJson { get; set; }
     public int? MatchScore { get; set; }
     public string? Letter { get; set; }
 

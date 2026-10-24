@@ -8,7 +8,7 @@ namespace JobbAgent.Api.Tests;
 // Svarar som respektive agent utifrån vem systemprompten vänder sig till.
 public class FakeLlm : ILlm
 {
-    public static readonly string[] Agents = ["Sökare", "Tolkare", "Matchare", "Skribent", "Granskare"];
+    public static readonly string[] Agents = ["Sökare", "Tolkare", "Matchare", "Skribent", "Granskare", "Intervjucoach"];
 
     public List<string> Calls { get; } = [];
     public List<string> Prompts { get; } = [];
@@ -36,6 +36,11 @@ public class FakeLlm : ILlm
                 {"title":"Backendutvecklare","company":"Acme AB","location":"Stockholm","summary":"Bygga API:er.",
                  "mustHave":["C#"],"niceToHave":["Azure"],"responsibilities":["API"],"traits":["Noggrann"],
                  "contactPerson":"Anna","language":"sv"}
+                """,
+            "Intervjucoach" => """
+                {"summary":"Lyft fram dina projekt.","questions":[{"category":"Kompetens","question":"Berätta om ett API du byggt.",
+                 "whyTheyAsk":"De vill se erfarenhet.","tips":["Nämn TrAInr"],"exampleAnswer":"Jag byggde..."}],
+                 "questionsToAsk":["Hur ser teamet ut?"],"gaps":[{"gap":"Azure","howToHandle":"Visa att du lär dig snabbt."}]}
                 """,
             "Skribent" => prompt.Contains("Granskare's feedback") ? "Hej Anna! Brev v2" : "Hej Anna! Brev v1",
             _ => ReviewAnswers.Count > 0 ? ReviewAnswers.Dequeue() : """{"approved":true,"feedback":""}""",

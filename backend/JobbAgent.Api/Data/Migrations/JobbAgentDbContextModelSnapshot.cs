@@ -169,6 +169,9 @@ namespace JobbAgent.Api.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<Guid?>("ApplicationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Company")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -184,6 +187,9 @@ namespace JobbAgent.Api.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("HitsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InterviewJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Keywords")
@@ -222,6 +228,9 @@ namespace JobbAgent.Api.Data.Migrations
 
                     b.Property<string>("RequirementsJson")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("SourceRunId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
                         .IsRequired()

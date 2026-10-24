@@ -51,6 +51,13 @@ export default function App() {
   const saveJob = async (job: NewApplication) => upsert(await api.createApplication(job))
   const updateJob = async (a: Application) => upsert(await api.updateApplication(a))
 
+  // Finns redan en intervjuförberedelse för jobbet öppnas den, annars startar agenterna en ny.
+  async function prepareInterview(from: { letterRunId?: string; applicationId?: string }) {
+    const existing = runs.find(r => r.kind === 'interview' && r.status !== 'failed' &&
+      ((from.letterRunId && r.sourceRunId === from.letterRunId) || (from.applicationId && r.applicationId === from.applicationId)))
+    open(existing ?? await api.createInterview(from))
+  }
+
   async function deleteJob(id: string) {
     await api.deleteApplication(id)
     setApplications(list => list.filter(a => a.id !== id))
@@ -100,13 +107,14 @@ export default function App() {
         <div>
           {current ? (
             <RunView key={current.id} run={current} onFinished={refresh} onDelete={() => remove(current.id)} onCreateLetter={createLetter}
-              applications={applications} onSaveJob={saveJob} />
+              applications={applications} onSaveJob={saveJob} onPrepareInterview={prepareInterview} />
           ) : tab === 'search' ? (
             <SearchForm onSearch={search} disabled={!canRun} />
           ) : tab === 'letter' ? (
             <LetterForm onCreate={createLetter} disabled={!canRun} />
           ) : tab === 'board' ? (
-            <Board applications={applications} onUpdate={updateJob} onDelete={deleteJob} onAdd={() => setAdding(true)} onOpenLetter={setSelected} />
+            <Board applications={applications} onUpdate={updateJob} onDelete={deleteJob} onAdd={() => setAdding(true)} onOpenLetter={setSelected}
+              onPrepareInterview={a => prepareInterview(a.letterRunId ? { letterRunId: a.letterRunId } : { applicationId: a.id })} />
           ) : (
             <CvPanel onSaved={() => setStatus(s => ({ ...s, hasCv: true }))} />
           )}

@@ -9,9 +9,10 @@ namespace JobbAgent.Api.Services;
 //   Sökning: Sökare → Matchare (rankar annonserna)
 //   Brev:    Tolkare → Matchare → Skribent → Granskare, och tillbaka till Skribent om Granskaren
 //            underkänner brevet (högst MaxRevisions gånger).
+//   Intervju: Tolkare → Matchare → Intervjucoach. Finns ett brev till jobbet återanvänds dess krav och matchning.
 public class RunOrchestrator(
     IServiceScopeFactory scopes, RunEvents events,
-    Searcher searcher, Interpreter interpreter, Matcher matcher, Writer writer, Reviewer reviewer,
+    Searcher searcher, Interpreter interpreter, Matcher matcher, Writer writer, Reviewer reviewer, Coach coach,
     ILogger<RunOrchestrator> logger)
 {
     public const int MaxRevisions = 1;
@@ -32,10 +33,13 @@ public class RunOrchestrator(
             if (string.IsNullOrWhiteSpace(cv))
                 throw new AgentException("Lägg in ditt CV först.");
 
-            if (run.Kind == RunKind.Search)
-                await SearchAsync(run, cv, log, a => current = a, ct);
-            else
-                await LetterAsync(run, cv, log, a => current = a, ct);
+            Action<string> setCurrent = a => current = a;
+            await (run.Kind switch
+            {
+                RunKind.Search => SearchAsync(run, cv, log, setCurrent, ct),
+                RunKind.Letter => LetterAsync(run, cv, log, setCurrent, ct),
+                _ => InterviewAsync(run, cv, log, setCurrent, ct),
+            });
 
             await log.SetStatusAsync(RunStatus.Completed, ct);
         }
@@ -76,24 +80,8 @@ public class RunOrchestrator(
 
     private async Task LetterAsync(Run run, string cv, StepLog log, Action<string> setCurrent, CancellationToken ct)
     {
-        setCurrent(Interpreter.Name);
-        await log.AddAsync(Interpreter.Name, StepKind.Started, "Läser annonsen", ct: ct);
-        var requirements = await interpreter.InterpretAsync(run.AdText ?? "", ct);
-        run.RequirementsJson = JsonSerializer.Serialize(requirements, ApiJson.Options);
-        if (requirements.Title.Length > 0) run.Title = Text.Truncate(requirements.Title, 300);
-        if (requirements.Company.Length > 0) run.Company = Text.Truncate(requirements.Company, 200);
-        if (run.Language == "auto") run.Language = requirements.Language == "en" ? "en" : "sv";
-        await log.AddAsync(Interpreter.Name, StepKind.Completed,
-            $"{requirements.MustHave.Length} krav och {requirements.NiceToHave.Length} meriter", Interpreter.Format(requirements), ct: ct);
-        await log.AddAsync(Interpreter.Name, StepKind.Handoff, "Lämnar över kraven", to: Matcher.Name, ct: ct);
-
-        setCurrent(Matcher.Name);
-        await log.AddAsync(Matcher.Name, StepKind.Started, "Jämför kraven med ditt CV", ct: ct);
-        var match = await matcher.MatchAsync(cv, requirements, ct);
-        run.MatchJson = JsonSerializer.Serialize(match, ApiJson.Options);
-        run.MatchScore = match.Score;
-        await log.AddAsync(Matcher.Name, StepKind.Completed,
-            $"Du matchar {match.Score} % ({match.Matches.Length} krav uppfyllda, {match.Gaps.Length} saknas)", Matcher.Format(match), ct: ct);
+        var requirements = await InterpretAsync(run, log, setCurrent, ct);
+        var match = await MatchAsync(run, cv, requirements, log, setCurrent, ct);
         await log.AddAsync(Matcher.Name, StepKind.Handoff, "Lämnar över vad brevet ska lyfta fram", to: Writer.Name, ct: ct);
 
         string? letter = null;
@@ -123,6 +111,65 @@ public class RunOrchestrator(
             await log.AddAsync(Reviewer.Name, StepKind.Handoff, "Skickar tillbaka till Skribenten med synpunkter", to: Writer.Name, ct: ct);
         }
         run.Letter = letter;
+    }
+
+    private async Task InterviewAsync(Run run, string cv, StepLog log, Action<string> setCurrent, CancellationToken ct)
+    {
+        var requirements = await InterpretAsync(run, log, setCurrent, ct);
+        var match = await MatchAsync(run, cv, requirements, log, setCurrent, ct);
+        await log.AddAsync(Matcher.Name, StepKind.Handoff, "Lämnar över styrkor och luckor", to: Coach.Name, ct: ct);
+
+        setCurrent(Coach.Name);
+        await log.AddAsync(Coach.Name, StepKind.Started, "Tar fram troliga intervjufrågor och förslag på svar", ct: ct);
+        var prep = await coach.PrepareAsync(cv, requirements, match, run.Language, ct);
+        run.InterviewJson = JsonSerializer.Serialize(prep, ApiJson.Options);
+        await log.AddAsync(Coach.Name, StepKind.Completed,
+            $"{prep.Questions.Length} troliga frågor och {prep.QuestionsToAsk.Length} frågor att ställa själv", Coach.Format(prep), ct: ct);
+    }
+
+    // Tolkaren läser annonsen, om inte kraven redan finns (t.ex. från ett brev till samma jobb).
+    private async Task<AdRequirements> InterpretAsync(Run run, StepLog log, Action<string> setCurrent, CancellationToken ct)
+    {
+        setCurrent(Interpreter.Name);
+        AdRequirements requirements;
+        if (run.RequirementsJson is not null)
+        {
+            requirements = JsonSerializer.Deserialize<AdRequirements>(run.RequirementsJson, ApiJson.Options)!;
+            await log.AddAsync(Interpreter.Name, StepKind.Completed, "Använder kraven från brevet", Interpreter.Format(requirements), ct: ct);
+        }
+        else
+        {
+            await log.AddAsync(Interpreter.Name, StepKind.Started, "Läser annonsen", ct: ct);
+            requirements = await interpreter.InterpretAsync(run.AdText ?? "", ct);
+            run.RequirementsJson = JsonSerializer.Serialize(requirements, ApiJson.Options);
+            if (requirements.Title.Length > 0)
+                run.Title = Text.Truncate(run.Kind == RunKind.Interview ? $"Intervju: {requirements.Title}" : requirements.Title, 300);
+            if (requirements.Company.Length > 0) run.Company = Text.Truncate(requirements.Company, 200);
+            await log.AddAsync(Interpreter.Name, StepKind.Completed,
+                $"{requirements.MustHave.Length} krav och {requirements.NiceToHave.Length} meriter", Interpreter.Format(requirements), ct: ct);
+        }
+        if (run.Language == "auto") run.Language = requirements.Language == "en" ? "en" : "sv";
+        await log.AddAsync(Interpreter.Name, StepKind.Handoff, "Lämnar över kraven", to: Matcher.Name, ct: ct);
+        return requirements;
+    }
+
+    private async Task<MatchResult> MatchAsync(Run run, string cv, AdRequirements requirements, StepLog log, Action<string> setCurrent,
+        CancellationToken ct)
+    {
+        setCurrent(Matcher.Name);
+        if (run.MatchJson is not null)
+        {
+            var reused = JsonSerializer.Deserialize<MatchResult>(run.MatchJson, ApiJson.Options)!;
+            await log.AddAsync(Matcher.Name, StepKind.Completed, $"Använder matchningen från brevet ({reused.Score} %)", Matcher.Format(reused), ct: ct);
+            return reused;
+        }
+        await log.AddAsync(Matcher.Name, StepKind.Started, "Jämför kraven med ditt CV", ct: ct);
+        var match = await matcher.MatchAsync(cv, requirements, ct);
+        run.MatchJson = JsonSerializer.Serialize(match, ApiJson.Options);
+        run.MatchScore = match.Score;
+        await log.AddAsync(Matcher.Name, StepKind.Completed,
+            $"Du matchar {match.Score} % ({match.Matches.Length} krav uppfyllda, {match.Gaps.Length} saknas)", Matcher.Format(match), ct: ct);
+        return match;
     }
 
     private sealed class StepLog(JobbAgentDbContext db, Run run, RunEvents events)

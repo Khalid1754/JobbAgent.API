@@ -18,6 +18,9 @@ public record CreateLetterRequest(string? AdText, string? AdUrl, string? Platsba
 
 public record UpdateLetterRequest(string Letter);
 
+// Intervjuförberedelse utgår från ett brev eller från ett jobb på tavlan.
+public record CreateInterviewRequest(Guid? LetterRunId, Guid? ApplicationId);
+
 // Nytt jobb på tavlan. Kommer det från ett brev räcker LetterRunId, resten hämtas från brevet.
 public record CreateApplicationRequest(
     string? Title, string? Company, string? Location, string? Url, string? PlatsbankenId,
@@ -38,9 +41,10 @@ public record ApplicationDto(
 }
 
 public record RunSummaryDto(Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
-    DateTime CreatedAt, DateTime? FinishedAt)
+    Guid? SourceRunId, Guid? ApplicationId, DateTime CreatedAt, DateTime? FinishedAt)
 {
-    public static RunSummaryDto From(Run r) => new(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.CreatedAt, r.FinishedAt);
+    public static RunSummaryDto From(Run r) =>
+        new(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.SourceRunId, r.ApplicationId, r.CreatedAt, r.FinishedAt);
 }
 
 public record StepDto(int Sequence, string Agent, string? ToAgent, StepKind Kind, string Summary, string? Detail, DateTime CreatedAt)
@@ -53,14 +57,14 @@ public record RunDto(
     string? Location, string? Keywords, bool RemoteOnly,
     string? AdUrl, string? AdText, string? PlatsbankenId, string Language,
     IReadOnlyList<SearchHit>? Hits, AdRequirements? Requirements, MatchResult? Match, string? Letter,
-    string? Error, DateTime CreatedAt, DateTime? FinishedAt, IReadOnlyList<StepDto> Steps)
+    InterviewPrep? Interview, Guid? SourceRunId, Guid? ApplicationId, string? Error, DateTime CreatedAt, DateTime? FinishedAt, IReadOnlyList<StepDto> Steps)
 {
     public static RunDto From(Run r) => new(
         r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore,
         r.Location, r.Keywords, r.RemoteOnly,
         r.AdUrl, r.AdText, r.PlatsbankenId, r.Language,
         Read<List<SearchHit>>(r.HitsJson), Read<AdRequirements>(r.RequirementsJson), Read<MatchResult>(r.MatchJson), r.Letter,
-        r.Error, r.CreatedAt, r.FinishedAt,
+        Read<InterviewPrep>(r.InterviewJson), r.SourceRunId, r.ApplicationId, r.Error, r.CreatedAt, r.FinishedAt,
         r.Steps.OrderBy(s => s.Sequence).Select(StepDto.From).ToList());
 
     private static T? Read<T>(string? json) where T : class =>

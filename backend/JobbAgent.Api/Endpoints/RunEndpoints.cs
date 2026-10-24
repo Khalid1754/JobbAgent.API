@@ -81,13 +81,80 @@ public static class RunEndpoints
             return await EnqueueAsync(db, queue, run, ct);
         });
 
+        api.MapPost("/interviews", async (CreateInterviewRequest request, JobbAgentDbContext db, RunQueue queue,
+            IJobBoard board, AdReader reader, CancellationToken ct) =>
+        {
+            if (!await db.Profiles.AnyAsync(ct))
+                return Results.BadRequest(new { error = "Lägg in ditt CV först." });
+
+            var application = request.ApplicationId is { } appId ? await db.Applications.FirstOrDefaultAsync(a => a.Id == appId, ct) : null;
+            if (request.ApplicationId is not null && application is null)
+                return Results.BadRequest(new { error = "Jobbet finns inte på tavlan." });
+            var letterId = request.LetterRunId ?? application?.LetterRunId;
+            var letter = letterId is { } id ? await db.Runs.FirstOrDefaultAsync(r => r.Id == id && r.Kind == RunKind.Letter, ct) : null;
+            if (request.LetterRunId is not null && letter is null)
+                return Results.BadRequest(new { error = "Brevet finns inte." });
+            application ??= letter is null ? null : await db.Applications.FirstOrDefaultAsync(a => a.LetterRunId == letter.Id, ct);
+
+            var run = new Run { Kind = RunKind.Interview, SourceRunId = letter?.Id, ApplicationId = application?.Id };
+            if (letter is { Status: RunStatus.Completed })
+            {
+                // Kraven och matchningen från brevet återanvänds, så att bara Intervjucoachen behöver jobba.
+                run.Title = letter.Title;
+                run.Company = letter.Company;
+                run.AdUrl = letter.AdUrl;
+                run.AdText = letter.AdText;
+                run.PlatsbankenId = letter.PlatsbankenId;
+                run.Language = letter.Language;
+                run.RequirementsJson = letter.RequirementsJson;
+                run.MatchJson = letter.MatchJson;
+                run.MatchScore = letter.MatchScore;
+            }
+            else if (application is not null)
+            {
+                run.Title = application.Title;
+                run.Company = application.Company;
+                try
+                {
+                    var platsbankenId = application.PlatsbankenId ?? (application.Url is null ? null : AdReader.PlatsbankenId(application.Url));
+                    if (platsbankenId is not null)
+                    {
+                        var ad = await GetAdAsync(board, platsbankenId, ct);
+                        run.PlatsbankenId = ad.Id;
+                        run.AdUrl = ad.Url;
+                        run.AdText = $"{ad.Title}\n{ad.Employer}\n{ad.Municipality}\n\n{ad.Description}";
+                    }
+                    else if (application.Url is not null)
+                    {
+                        run.AdUrl = application.Url;
+                        run.AdText = await reader.ReadAsync(application.Url, ct);
+                    }
+                    else
+                    {
+                        return Results.BadRequest(new { error = "Lägg in en länk till annonsen på jobbet först, så att agenterna kan läsa den." });
+                    }
+                }
+                catch (DocumentException e)
+                {
+                    return Results.BadRequest(new { error = e.Message });
+                }
+            }
+            else
+            {
+                return Results.BadRequest(new { error = "Välj ett brev eller ett jobb på tavlan." });
+            }
+            if (run.AdText is { Length: > MaxAdLength }) run.AdText = run.AdText[..MaxAdLength];
+            run.Title = Text.Truncate($"Intervju: {run.Title}", 300);
+            return await EnqueueAsync(db, queue, run, ct);
+        });
+
         var runs = api.MapGroup("/runs");
 
         runs.MapGet("/", async (JobbAgentDbContext db, CancellationToken ct) =>
             await db.Runs.AsNoTracking()
                 .OrderByDescending(r => r.CreatedAt)
                 .Take(100)
-                .Select(r => new RunSummaryDto(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.CreatedAt, r.FinishedAt))
+                .Select(r => new RunSummaryDto(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.SourceRunId, r.ApplicationId, r.CreatedAt, r.FinishedAt))
                 .ToListAsync(ct));
 
         runs.MapGet("/{id:guid}", async (Guid id, JobbAgentDbContext db, CancellationToken ct) =>

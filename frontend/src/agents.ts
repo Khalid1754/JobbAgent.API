@@ -17,11 +17,17 @@ export const AGENTS: Record<RunKind, Agent[]> = {
     { name: 'Skribent', icon: '✍️', label: 'Skriver brevet' },
     { name: 'Granskare', icon: '✅', label: 'Granskar' },
   ],
+  interview: [
+    { name: 'Tolkare', icon: '📄', label: 'Läser annonsen' },
+    { name: 'Matchare', icon: '🎯', label: 'Hittar styrkor och luckor' },
+    { name: 'Intervjucoach', icon: '🗣️', label: 'Förbereder frågor och svar' },
+  ],
 }
 
 export type AgentState = 'waiting' | 'working' | 'done' | 'failed'
 
 const ICONS: Record<string, string> = Object.fromEntries(Object.values(AGENTS).flat().map(a => [a.name, a.icon]))
+export const KIND_ICON: Record<RunKind, string> = { search: '🔎', letter: '✉️', interview: '🗣️' }
 export const iconFor = (agent: string) => ICONS[agent] ?? '🤖'
 
 // En agents läge avgörs av det senaste steget den själv gjorde.

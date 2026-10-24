@@ -34,6 +34,7 @@ builder.Services.AddSingleton<Interpreter>();
 builder.Services.AddSingleton<Matcher>();
 builder.Services.AddSingleton<Writer>();
 builder.Services.AddSingleton<Reviewer>();
+builder.Services.AddSingleton<Coach>();
 builder.Services.AddSingleton<RunEvents>();
 builder.Services.AddSingleton<RunQueue>();
 builder.Services.AddSingleton<RunOrchestrator>();

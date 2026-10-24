@@ -8,6 +8,7 @@ interface Props {
   onDelete?: () => Promise<void>
   onClose: () => void
   onOpenLetter?: () => void
+  onPrepareInterview?: () => Promise<void>
 }
 
 // <input type="date"> vill ha ÅÅÅÅ-MM-DD och datetime-local ÅÅÅÅ-MM-DDTHH:MM i lokal tid.
@@ -20,7 +21,7 @@ const toDate = (iso?: string) => {
 const toDateTime = (iso?: string) => (iso ? `${toDate(iso)}T${pad(new Date(iso).getHours())}:${pad(new Date(iso).getMinutes())}` : '')
 const fromInput = (value: string) => (value ? new Date(value).toISOString() : undefined)
 
-export default function ApplicationEditor({ application, onSave, onDelete, onClose, onOpenLetter }: Props) {
+export default function ApplicationEditor({ application, onSave, onDelete, onClose, onOpenLetter, onPrepareInterview }: Props) {
   const [a, setA] = useState(application)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -100,6 +101,12 @@ export default function ApplicationEditor({ application, onSave, onDelete, onClo
           {onDelete && <button type="button" className="danger" onClick={onDelete}>Ta bort</button>}
           {a.url && <a href={a.url} target="_blank" rel="noreferrer">Annonsen</a>}
           {onOpenLetter && <button type="button" className="secondary" onClick={onOpenLetter}>Visa brevet</button>}
+          {onPrepareInterview && (
+            <button type="button" className="secondary" disabled={busy} onClick={() => {
+              setBusy(true)
+              onPrepareInterview().catch(err => { setError((err as Error).message); setBusy(false) })
+            }}>🗣️ Förbered intervju</button>
+          )}
           <span className="spacer" />
           <button type="button" className="secondary" onClick={onClose}>Avbryt</button>
           <button disabled={busy || a.title.trim().length === 0}>{busy ? 'Sparar…' : 'Spara'}</button>

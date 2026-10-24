@@ -80,6 +80,26 @@ public class ApplicationTests : IDisposable
         Assert.Equal((saved.Id, letter.Id, Stage.Applied, 82), (linked.Id, linked.LetterRunId, linked.Stage, linked.MatchScore));
     }
 
+    [Fact]
+    public async Task Interview_CanStartFromLetterOrBoard()
+    {
+        await _client.PutAsJsonAsync("/api/profile", new { cvText = OrchestratorTests.Cv });
+        var letter = await _app.RunLetterAsync(_client);
+        var fromLetter = await TestApp.RunToEndAsync(_client, await _client.PostAsJsonAsync("/api/interviews", new { letterRunId = letter.Id }));
+        Assert.Equal((RunKind.Interview, "Intervju: Backendutvecklare", letter.Id), (fromLetter.Kind, fromLetter.Title, fromLetter.SourceRunId));
+        Assert.NotNull(fromLetter.Interview);
+
+        var card = await CreateAsync(new { title = "Systemutvecklare", platsbankenId = "55" });
+        var fromBoard = await TestApp.RunToEndAsync(_client, await _client.PostAsJsonAsync("/api/interviews", new { applicationId = card.Id }));
+        Assert.Equal(card.Id, fromBoard.ApplicationId);
+        Assert.Contains("Backendutvecklare", fromBoard.AdText);
+
+        var noLink = await CreateAsync(new { title = "Okänt jobb" });
+        var response = await _client.PostAsJsonAsync("/api/interviews", new { applicationId = noLink.Id });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("länk", await response.Content.ReadAsStringAsync());
+    }
+
     [Theory]
     [InlineData("""{"title":""}""", "titel")]
     [InlineData("""{"letterRunId":"00000000-0000-0000-0000-000000000001"}""", "Brevet finns inte")]

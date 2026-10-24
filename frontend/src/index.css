@@ -139,3 +139,10 @@ dialog::backdrop { background: rgb(0 0 0 / .4); }
 dialog form { border: none; }
 dialog h2 { margin: 0; }
 .spacer { flex: 1; }
+
+/* Intervjuförberedelse */
+ol.questions { padding-left: 22px; display: grid; gap: 10px; }
+ol.questions ul { margin: 6px 0; padding-left: 18px; }
+.chip-label { font-size: 12px; background: var(--soft); color: var(--accent); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+blockquote { margin: 6px 0 0; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; font-size: 14px; }
+.card.columns { display: grid; }

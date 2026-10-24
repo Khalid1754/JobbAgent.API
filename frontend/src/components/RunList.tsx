@@ -1,4 +1,5 @@
 import type { RunStatus, RunSummary } from '../api'
+import { KIND_ICON } from '../agents'
 import Score from './Score'
 
 const STATUS: Record<RunStatus, string> = { queued: 'I kö', running: 'Pågår', completed: 'Klar', failed: 'Misslyckades' }
@@ -10,7 +11,7 @@ export default function RunList({ runs, selected, onSelect }: { runs: RunSummary
       {runs.map(run => (
         <li key={run.id}>
           <button className={run.id === selected ? 'active' : ''} onClick={() => onSelect(run.id)}>
-            <span className="icon">{run.kind === 'search' ? '🔎' : '✉️'}</span>
+            <span className="icon">{KIND_ICON[run.kind]}</span>
             <span className="title">
               {run.title}
               {run.company && <span className="meta"> · {run.company}</span>}

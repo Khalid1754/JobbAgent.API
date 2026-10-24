@@ -7,9 +7,10 @@ interface Props {
   run: Run
   application?: Application
   onSaveJob: (job: NewApplication) => Promise<void>
+  onPrepareInterview: () => Promise<void>
 }
 
-export default function LetterView({ run, application, onSaveJob }: Props) {
+export default function LetterView({ run, application, onSaveJob, onPrepareInterview }: Props) {
   const [letter, setLetter] = useState(run.letter ?? '')
   const [saved, setSaved] = useState(run.letter ?? '')
   const [message, setMessage] = useState<string | null>(null)
@@ -93,6 +94,7 @@ export default function LetterView({ run, application, onSaveJob }: Props) {
               <button className="secondary" onClick={() => track('saved')}>⭐ Spara på tavlan</button>
             </>
           )}
+          <button className="secondary" onClick={() => onPrepareInterview().catch(err => flash((err as Error).message))}>🗣️ Förbered intervju</button>
         </div>
       </div>
 

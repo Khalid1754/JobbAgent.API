@@ -1,5 +1,5 @@
 export type RunStatus = 'queued' | 'running' | 'completed' | 'failed'
-export type RunKind = 'search' | 'letter'
+export type RunKind = 'search' | 'letter' | 'interview'
 export type StepKind = 'started' | 'completed' | 'handoff' | 'failed'
 export type Language = 'auto' | 'sv' | 'en'
 
@@ -58,6 +58,8 @@ export interface RunSummary {
   company?: string
   status: RunStatus
   matchScore?: number
+  sourceRunId?: string
+  applicationId?: string
   createdAt: string
   finishedAt?: string
 }
@@ -94,6 +96,21 @@ export interface Match {
   highlights: string[]
 }
 
+export interface InterviewQuestion {
+  category: string
+  question: string
+  whyTheyAsk: string
+  tips: string[]
+  exampleAnswer: string
+}
+
+export interface InterviewPrep {
+  summary: string
+  questions: InterviewQuestion[]
+  questionsToAsk: string[]
+  gaps: { gap: string; howToHandle: string }[]
+}
+
 export interface Run extends RunSummary {
   location?: string
   keywords?: string
@@ -106,6 +123,7 @@ export interface Run extends RunSummary {
   requirements?: Requirements
   match?: Match
   letter?: string
+  interview?: InterviewPrep
   error?: string
   steps: Step[]
 }
@@ -154,6 +172,7 @@ export const api = {
   getRun: (id: string) => request<Run>(`/api/runs/${id}`),
   search: (search: NewSearch) => request<RunSummary>('/api/searches', json('POST', search)),
   createLetter: (letter: NewLetter) => request<RunSummary>('/api/letters', json('POST', letter)),
+  createInterview: (from: { letterRunId?: string; applicationId?: string }) => request<RunSummary>('/api/interviews', json('POST', from)),
   saveLetter: (id: string, letter: string) => request<void>(`/api/runs/${id}/letter`, json('PUT', { letter })),
   deleteRun: (id: string) => request<void>(`/api/runs/${id}`, { method: 'DELETE' }),
   eventsUrl: (id: string) => `/api/runs/${id}/events`,
