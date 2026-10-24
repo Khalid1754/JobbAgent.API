@@ -51,6 +51,30 @@ public class Run
     public List<AgentStep> Steps { get; set; } = [];
 }
 
+// Var en ansökan befinner sig på tavlan.
+public enum Stage { Saved, Applied, Interview, Offer, Rejected }
+
+// Ett jobb på ansökningstavlan. Kan komma från en sökträff, ett brev eller läggas in för hand.
+public class JobApplication
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Title { get; set; } = "";
+    public string? Company { get; set; }
+    public string? Location { get; set; }
+    public string? Url { get; set; }
+    public string? PlatsbankenId { get; set; }
+    public DateTime? Deadline { get; set; }
+    public int? MatchScore { get; set; }
+    // Brevet som skrevs till jobbet, om det finns ett.
+    public Guid? LetterRunId { get; set; }
+    public Stage Stage { get; set; } = Stage.Saved;
+    public string? Notes { get; set; }
+    public DateTime? AppliedAt { get; set; }
+    public DateTime? InterviewAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime StageChangedAt { get; set; } = DateTime.UtcNow;
+}
+
 public class AgentStep
 {
     public int Id { get; set; }

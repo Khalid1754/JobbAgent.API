@@ -116,6 +116,8 @@ public static class RunEndpoints
             if (run is null) return Results.NotFound();
             if (run.Status == RunStatus.Running)
                 return Results.Conflict(new { error = "Agenterna jobbar fortfarande, vänta tills de är klara." });
+            // Jobbet ligger kvar på tavlan även om brevet tas bort.
+            await db.Applications.Where(a => a.LetterRunId == id).ForEachAsync(a => a.LetterRunId = null, ct);
             db.Runs.Remove(run);
             await db.SaveChangesAsync(ct);
             return Results.NoContent();

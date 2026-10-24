@@ -8,6 +8,7 @@ public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : 
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<Run> Runs => Set<Run>();
     public DbSet<AgentStep> Steps => Set<AgentStep>();
+    public DbSet<JobApplication> Applications => Set<JobApplication>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -30,6 +31,18 @@ public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : 
             e.Property(r => r.Error).HasMaxLength(1000);
             e.HasIndex(r => r.CreatedAt);
             e.HasMany(r => r.Steps).WithOne().HasForeignKey(s => s.RunId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<JobApplication>(e =>
+        {
+            e.Property(a => a.Title).HasMaxLength(300);
+            e.Property(a => a.Company).HasMaxLength(200);
+            e.Property(a => a.Location).HasMaxLength(100);
+            e.Property(a => a.Url).HasMaxLength(1000);
+            e.Property(a => a.PlatsbankenId).HasMaxLength(50);
+            e.Property(a => a.Stage).HasConversion<string>().HasMaxLength(20);
+            e.Property(a => a.Notes).HasMaxLength(4000);
+            e.HasIndex(a => a.PlatsbankenId);
+            e.HasIndex(a => a.LetterRunId);
         });
         b.Entity<AgentStep>(e =>
         {

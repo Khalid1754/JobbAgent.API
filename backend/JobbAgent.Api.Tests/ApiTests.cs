@@ -13,45 +13,53 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace JobbAgent.Api.Tests;
 
-public class ApiTests : IDisposable
+// Hela API:t med minnesdatabas, påhittad AI och påhittad Platsbanken. En ny databas per instans.
+public class TestApp : WebApplicationFactory<Program>
 {
-    // Hela API:t med minnesdatabas, påhittad AI och påhittad Platsbanken. En ny databas per test.
-    private class App : WebApplicationFactory<Program>
-    {
-        private readonly string _dbName = Guid.NewGuid().ToString();
+    public static readonly JsonSerializerOptions Json = ApiJson.Options;
+    private readonly string _dbName = Guid.NewGuid().ToString();
 
-        protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.ConfigureServices(services =>
-        {
-            services.RemoveAll<DbContextOptions<JobbAgentDbContext>>();
-            services.RemoveAll(typeof(IDbContextOptionsConfiguration<JobbAgentDbContext>));
-            services.AddDbContext<JobbAgentDbContext>(o => o.UseInMemoryDatabase(_dbName));
-            services.RemoveAll<ILlm>();
-            services.AddSingleton<ILlm>(new FakeLlm());
-            services.RemoveAll<IJobBoard>();
-            services.AddSingleton<IJobBoard>(new FakeJobBoard());
-        });
+    protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.ConfigureServices(services =>
+    {
+        services.RemoveAll<DbContextOptions<JobbAgentDbContext>>();
+        services.RemoveAll(typeof(IDbContextOptionsConfiguration<JobbAgentDbContext>));
+        services.AddDbContext<JobbAgentDbContext>(o => o.UseInMemoryDatabase(_dbName));
+        services.RemoveAll<ILlm>();
+        services.AddSingleton<ILlm>(new FakeLlm());
+        services.RemoveAll<IJobBoard>();
+        services.AddSingleton<IJobBoard>(new FakeJobBoard());
+    });
+
+    public const string AdText = "Vi söker en backendutvecklare till Acme AB i Stockholm. Du kan C# och .NET och gillar att bygga API:er tillsammans med andra.";
+
+    // Väntar tills agenterna är klara (händelseströmmen tar slut) och hämtar resultatet.
+    public static async Task<RunDto> RunToEndAsync(HttpClient client, HttpResponseMessage created)
+    {
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var run = (await created.Content.ReadFromJsonAsync<RunSummaryDto>(Json))!;
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var stream = await client.GetStringAsync($"/api/runs/{run.Id}/events", cts.Token);
+        Assert.Contains("\"status\":\"completed\"", stream);
+        return (await client.GetFromJsonAsync<RunDto>($"/api/runs/{run.Id}", Json))!;
     }
 
-    private readonly App _app = new();
+    public async Task<RunDto> RunLetterAsync(HttpClient client) =>
+        await RunToEndAsync(client, await client.PostAsJsonAsync("/api/letters", new { adText = AdText }));
+}
+
+public class ApiTests : IDisposable
+{
+    private readonly TestApp _app = new();
     private readonly HttpClient _client;
-    private static readonly JsonSerializerOptions Json = ApiJson.Options;
-    private const string AdText = "Vi söker en backendutvecklare till Acme AB i Stockholm. Du kan C# och .NET och gillar att bygga API:er tillsammans med andra.";
+    private static readonly JsonSerializerOptions Json = TestApp.Json;
+    private const string AdText = TestApp.AdText;
 
     public ApiTests() => _client = _app.CreateClient();
     public void Dispose() => _app.Dispose();
 
     private Task SaveCvAsync() => _client.PutAsJsonAsync("/api/profile", new { cvText = OrchestratorTests.Cv });
 
-    private async Task<RunDto> RunToEndAsync(HttpResponseMessage created)
-    {
-        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
-        var run = (await created.Content.ReadFromJsonAsync<RunSummaryDto>(Json))!;
-        // Händelseströmmen tar slut när körningen är klar.
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        var stream = await _client.GetStringAsync($"/api/runs/{run.Id}/events", cts.Token);
-        Assert.Contains("\"status\":\"completed\"", stream);
-        return (await _client.GetFromJsonAsync<RunDto>($"/api/runs/{run.Id}", Json))!;
-    }
+    private Task<RunDto> RunToEndAsync(HttpResponseMessage created) => TestApp.RunToEndAsync(_client, created);
 
     [Fact]
     public async Task Profile_IsSavedAndValidated()

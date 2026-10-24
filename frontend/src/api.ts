@@ -3,6 +3,38 @@ export type RunKind = 'search' | 'letter'
 export type StepKind = 'started' | 'completed' | 'handoff' | 'failed'
 export type Language = 'auto' | 'sv' | 'en'
 
+export type Stage = 'saved' | 'applied' | 'interview' | 'offer' | 'rejected'
+
+export interface Application {
+  id: string
+  title: string
+  company?: string
+  location?: string
+  url?: string
+  platsbankenId?: string
+  deadline?: string
+  matchScore?: number
+  letterRunId?: string
+  stage: Stage
+  notes?: string
+  appliedAt?: string
+  interviewAt?: string
+  createdAt: string
+  stageChangedAt: string
+}
+
+export interface NewApplication {
+  title?: string
+  company?: string
+  location?: string
+  url?: string
+  platsbankenId?: string
+  deadline?: string
+  matchScore?: number
+  letterRunId?: string
+  stage?: Stage
+}
+
 export interface Profile {
   cvText: string
   fileName?: string
@@ -68,6 +100,7 @@ export interface Run extends RunSummary {
   remoteOnly: boolean
   adUrl?: string
   adText?: string
+  platsbankenId?: string
   language: Language
   hits?: SearchHit[]
   requirements?: Requirements
@@ -124,4 +157,8 @@ export const api = {
   saveLetter: (id: string, letter: string) => request<void>(`/api/runs/${id}/letter`, json('PUT', { letter })),
   deleteRun: (id: string) => request<void>(`/api/runs/${id}`, { method: 'DELETE' }),
   eventsUrl: (id: string) => `/api/runs/${id}/events`,
+  listApplications: () => request<Application[]>('/api/applications'),
+  createApplication: (a: NewApplication) => request<Application>('/api/applications', json('POST', a)),
+  updateApplication: (a: Application) => request<Application>(`/api/applications/${a.id}`, json('PUT', a)),
+  deleteApplication: (id: string) => request<void>(`/api/applications/${id}`, { method: 'DELETE' }),
 }

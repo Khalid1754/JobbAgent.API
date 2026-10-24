@@ -1,8 +1,15 @@
 import { useState } from 'react'
-import { api, type Run } from '../api'
+import { api, type Application, type NewApplication, type Run, type Stage } from '../api'
+import { STAGES } from '../board'
 import Score from './Score'
 
-export default function LetterView({ run }: { run: Run }) {
+interface Props {
+  run: Run
+  application?: Application
+  onSaveJob: (job: NewApplication) => Promise<void>
+}
+
+export default function LetterView({ run, application, onSaveJob }: Props) {
   const [letter, setLetter] = useState(run.letter ?? '')
   const [saved, setSaved] = useState(run.letter ?? '')
   const [message, setMessage] = useState<string | null>(null)
@@ -28,6 +35,15 @@ export default function LetterView({ run }: { run: Run }) {
     const name = `Personligt brev - ${run.company ?? run.title}.txt`.replace(/[\\/:*?"<>|]/g, '')
     Object.assign(document.createElement('a'), { href: url, download: name }).click()
     URL.revokeObjectURL(url)
+  }
+
+  async function track(stage: Stage) {
+    try {
+      await onSaveJob({ letterRunId: run.id, stage })
+      flash(stage === 'applied' ? 'Markerat som sökt på tavlan!' : 'Sparat på tavlan!')
+    } catch (err) {
+      flash((err as Error).message)
+    }
   }
 
   function flash(text: string) {
@@ -68,6 +84,16 @@ export default function LetterView({ run }: { run: Run }) {
         </div>
         <textarea className="letter" rows={22} value={letter} onChange={e => setLetter(e.target.value)} />
         <p className="meta">Läs alltid igenom brevet och gör det till ditt eget innan du skickar det.</p>
+        <div className="actions start">
+          {application ? (
+            <span className="muted">På ansökningstavlan: {STAGES.find(s => s.id === application.stage)?.icon} {STAGES.find(s => s.id === application.stage)?.label}</span>
+          ) : (
+            <>
+              <button onClick={() => track('applied')}>📨 Jag har sökt jobbet</button>
+              <button className="secondary" onClick={() => track('saved')}>⭐ Spara på tavlan</button>
+            </>
+          )}
+        </div>
       </div>
 
       {run.adText && (

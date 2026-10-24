@@ -1,10 +1,17 @@
 import { useState } from 'react'
-import type { NewLetter, SearchHit } from '../api'
+import type { Application, NewApplication, NewLetter, SearchHit } from '../api'
 import Score from './Score'
 
 const date = (iso: string) => new Date(iso).toLocaleDateString('sv-SE')
 
-export default function SearchResults({ hits, onCreateLetter }: { hits: SearchHit[]; onCreateLetter: (letter: NewLetter) => Promise<void> }) {
+interface Props {
+  hits: SearchHit[]
+  applications: Application[]
+  onCreateLetter: (letter: NewLetter) => Promise<void>
+  onSaveJob: (job: NewApplication) => Promise<void>
+}
+
+export default function SearchResults({ hits, applications, onCreateLetter, onSaveJob }: Props) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -18,6 +25,20 @@ export default function SearchResults({ hits, onCreateLetter }: { hits: SearchHi
       setBusy(null)
     }
   }
+
+  async function save(hit: SearchHit) {
+    setError(null)
+    try {
+      await onSaveJob({
+        title: hit.title, company: hit.employer, location: hit.municipality, url: hit.url,
+        platsbankenId: hit.id, deadline: hit.deadline, matchScore: hit.score,
+      })
+    } catch (err) {
+      setError((err as Error).message)
+    }
+  }
+
+  const saved = new Set(applications.map(a => a.platsbankenId))
 
   if (hits.length === 0)
     return <div className="card">Inga annonser hittades. Prova en annan ort, egna sökord eller ta bort distansvalet.</div>
@@ -37,9 +58,14 @@ export default function SearchResults({ hits, onCreateLetter }: { hits: SearchHi
               </div>
               <div>{hit.reason}</div>
             </div>
-            <button className="secondary" disabled={busy !== null} onClick={() => write(hit)}>
-              {busy === hit.id ? 'Startar…' : 'Skriv brev'}
-            </button>
+            <div className="hit-actions">
+              <button className="secondary" disabled={busy !== null} onClick={() => write(hit)}>
+                {busy === hit.id ? 'Startar…' : 'Skriv brev'}
+              </button>
+              <button className="secondary" disabled={saved.has(hit.id)} onClick={() => save(hit)} title="Spara på ansökningstavlan">
+                {saved.has(hit.id) ? '✓ Sparad' : '⭐ Spara'}
+              </button>
+            </div>
           </li>
         ))}
       </ul>

@@ -18,6 +18,25 @@ public record CreateLetterRequest(string? AdText, string? AdUrl, string? Platsba
 
 public record UpdateLetterRequest(string Letter);
 
+// Nytt jobb på tavlan. Kommer det från ett brev räcker LetterRunId, resten hämtas från brevet.
+public record CreateApplicationRequest(
+    string? Title, string? Company, string? Location, string? Url, string? PlatsbankenId,
+    DateTime? Deadline, int? MatchScore, Guid? LetterRunId, Stage? Stage);
+
+public record UpdateApplicationRequest(
+    string Title, string? Company, string? Location, string? Url, DateTime? Deadline,
+    Stage Stage, string? Notes, DateTime? AppliedAt, DateTime? InterviewAt);
+
+public record ApplicationDto(
+    Guid Id, string Title, string? Company, string? Location, string? Url, string? PlatsbankenId,
+    DateTime? Deadline, int? MatchScore, Guid? LetterRunId, Stage Stage, string? Notes,
+    DateTime? AppliedAt, DateTime? InterviewAt, DateTime CreatedAt, DateTime StageChangedAt)
+{
+    public static ApplicationDto From(JobApplication a) => new(
+        a.Id, a.Title, a.Company, a.Location, a.Url, a.PlatsbankenId, a.Deadline, a.MatchScore, a.LetterRunId,
+        a.Stage, a.Notes, a.AppliedAt, a.InterviewAt, a.CreatedAt, a.StageChangedAt);
+}
+
 public record RunSummaryDto(Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
     DateTime CreatedAt, DateTime? FinishedAt)
 {
@@ -32,14 +51,14 @@ public record StepDto(int Sequence, string Agent, string? ToAgent, StepKind Kind
 public record RunDto(
     Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
     string? Location, string? Keywords, bool RemoteOnly,
-    string? AdUrl, string? AdText, string Language,
+    string? AdUrl, string? AdText, string? PlatsbankenId, string Language,
     IReadOnlyList<SearchHit>? Hits, AdRequirements? Requirements, MatchResult? Match, string? Letter,
     string? Error, DateTime CreatedAt, DateTime? FinishedAt, IReadOnlyList<StepDto> Steps)
 {
     public static RunDto From(Run r) => new(
         r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore,
         r.Location, r.Keywords, r.RemoteOnly,
-        r.AdUrl, r.AdText, r.Language,
+        r.AdUrl, r.AdText, r.PlatsbankenId, r.Language,
         Read<List<SearchHit>>(r.HitsJson), Read<AdRequirements>(r.RequirementsJson), Read<MatchResult>(r.MatchJson), r.Letter,
         r.Error, r.CreatedAt, r.FinishedAt,
         r.Steps.OrderBy(s => s.Sequence).Select(StepDto.From).ToList());

@@ -58,6 +58,7 @@ app.UseCors();
 
 app.MapProfileEndpoints();
 app.MapRunEndpoints();
+app.MapApplicationEndpoints();
 app.MapFallbackToFile("index.html");
 
 app.Run();

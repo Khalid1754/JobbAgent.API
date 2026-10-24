@@ -116,3 +116,26 @@ p.ad { white-space: pre-wrap; font-size: 14px; }
 .card a { color: var(--accent); }
 ul.hits a { color: var(--text); }
 textarea.letter { background: var(--card); }
+
+/* Ansökningstavlan */
+.board-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.board-head h2, .board-head p { margin: 0; }
+.board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-items: start; }
+@media (max-width: 1100px) { .board { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
+.column { background: color-mix(in srgb, var(--border) 35%, transparent); border: 2px dashed transparent; border-radius: 12px; padding: 8px; display: grid; gap: 8px; min-height: 120px; align-content: start; }
+.column.over { border-color: var(--accent); background: var(--soft); }
+.column h3 { margin: 0 4px; font-size: 14px; }
+button.job { display: grid; gap: 4px; text-align: left; background: var(--card); color: var(--text); border: 1px solid var(--border); font-weight: 400; padding: 10px; cursor: grab; }
+button.job:hover { background: var(--card); border-color: var(--accent); }
+.job-title { font-weight: 600; font-size: 14px; overflow-wrap: break-word; hyphens: auto; }
+.job-foot { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.next { font-size: 12px; color: var(--muted); }
+.next.urgent { color: var(--warn); font-weight: 600; }
+.hit-actions { display: grid; gap: 6px; }
+@media (max-width: 600px) { .hit-actions { grid-column: 2; display: flex; } }
+dialog { border: 1px solid var(--border); border-radius: 12px; padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--card); color: var(--text); }
+dialog::backdrop { background: rgb(0 0 0 / .4); }
+dialog form { border: none; }
+dialog h2 { margin: 0; }
+.spacer { flex: 1; }
