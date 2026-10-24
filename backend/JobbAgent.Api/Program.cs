@@ -39,6 +39,8 @@ builder.Services.AddSingleton<RunEvents>();
 builder.Services.AddSingleton<RunQueue>();
 builder.Services.AddSingleton<RunOrchestrator>();
 builder.Services.AddHostedService<RunWorker>();
+builder.Services.AddSingleton<WatchScheduler>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<WatchScheduler>());
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["http://localhost:5173"])
@@ -60,6 +62,7 @@ app.UseCors();
 app.MapProfileEndpoints();
 app.MapRunEndpoints();
 app.MapApplicationEndpoints();
+app.MapWatchEndpoints();
 app.MapFallbackToFile("index.html");
 
 app.Run();

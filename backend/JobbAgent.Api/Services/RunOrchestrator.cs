@@ -36,7 +36,7 @@ public class RunOrchestrator(
             Action<string> setCurrent = a => current = a;
             await (run.Kind switch
             {
-                RunKind.Search => SearchAsync(run, cv, log, setCurrent, ct),
+                RunKind.Search => SearchAsync(db, run, cv, log, setCurrent, ct),
                 RunKind.Letter => LetterAsync(run, cv, log, setCurrent, ct),
                 _ => InterviewAsync(run, cv, log, setCurrent, ct),
             });
@@ -54,7 +54,7 @@ public class RunOrchestrator(
         }
     }
 
-    private async Task SearchAsync(Run run, string cv, StepLog log, Action<string> setCurrent, CancellationToken ct)
+    private async Task SearchAsync(JobbAgentDbContext db, Run run, string cv, StepLog log, Action<string> setCurrent, CancellationToken ct)
     {
         setCurrent(Searcher.Name);
         await log.AddAsync(Searcher.Name, StepKind.Started, "Läser ditt CV och söker i Platsbanken", ct: ct);
@@ -65,6 +65,11 @@ public class RunOrchestrator(
         if (result.Ads.Count == 0)
         {
             run.HitsJson = "[]";
+            if (run.WatchId is { } id && await db.Watches.FindAsync([id], ct) is { } emptyWatch)
+            {
+                emptyWatch.LastRunId = run.Id;
+                emptyWatch.NewMatches = 0;
+            }
             return;
         }
         await log.AddAsync(Searcher.Name, StepKind.Handoff, $"Lämnar över {result.Ads.Count} annonser", to: Matcher.Name, ct: ct);
@@ -72,10 +77,15 @@ public class RunOrchestrator(
         setCurrent(Matcher.Name);
         await log.AddAsync(Matcher.Name, StepKind.Started, "Jämför annonserna med ditt CV", ct: ct);
         var hits = await matcher.RankAsync(cv, result.Ads, ct);
+        var watch = run.WatchId is { } watchId ? await db.Watches.FindAsync([watchId], ct) : null;
+        if (watch is not null) hits = Watches.MarkNew(watch, hits, run.Id);
         run.HitsJson = JsonSerializer.Serialize(hits, ApiJson.Options);
         run.MatchScore = hits.FirstOrDefault()?.Score;
         await log.AddAsync(Matcher.Name, StepKind.Completed,
-            $"Bästa matchningen: {hits[0].Score} % ({hits[0].Title})", Matcher.FormatHits(hits.Take(10).ToList()), ct: ct);
+            watch is null
+                ? $"Bästa matchningen: {hits[0].Score} % ({hits[0].Title})"
+                : $"{watch.NewMatches} nya annonser som matchar minst {watch.MinScore} %",
+            Matcher.FormatHits(hits.Take(10).ToList()), ct: ct);
     }
 
     private async Task LetterAsync(Run run, string cv, StepLog log, Action<string> setCurrent, CancellationToken ct)

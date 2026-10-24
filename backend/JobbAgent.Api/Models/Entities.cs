@@ -43,6 +43,9 @@ public class Run
     public Guid? SourceRunId { get; set; }
     public Guid? ApplicationId { get; set; }
 
+    // Sökningar som en bevakning startat.
+    public Guid? WatchId { get; set; }
+
     // Agenternas resultat, sparat som JSON.
     public string? HitsJson { get; set; }
     public string? RequirementsJson { get; set; }
@@ -79,6 +82,24 @@ public class JobApplication
     public DateTime? InterviewAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime StageChangedAt { get; set; } = DateTime.UtcNow;
+}
+
+// En sparad sökning som körs automatiskt varje morgon och visar nya annonser som matchar bra.
+public class Watch
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string? Location { get; set; }
+    public string? Keywords { get; set; }
+    public bool RemoteOnly { get; set; }
+    public int MinScore { get; set; } = 70;
+    public bool Enabled { get; set; } = true;
+    // Annonser som redan visats, så att bara nya räknas nästa gång (JSON-lista med Platsbanken-id).
+    public string SeenAdIdsJson { get; set; } = "[]";
+    public DateTime? LastRunAt { get; set; }
+    public Guid? LastRunId { get; set; }
+    // Nya annonser över MinScore i senaste körningen som du inte har tittat på än.
+    public int NewMatches { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public class AgentStep

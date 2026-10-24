@@ -45,13 +45,14 @@ export default function SearchResults({ hits, applications, onCreateLetter, onSa
 
   return (
     <div className="card">
-      <h3>{hits.length} annonser, bäst matchning först</h3>
+      <h3>{hits.length} annonser, bäst matchning först{hits.some(h => h.isNew) && ` · ${hits.filter(h => h.isNew).length} nya sedan förra gången`}</h3>
       {error && <p className="error">{error}</p>}
       <ul className="hits">
         {hits.map(hit => (
           <li key={hit.id}>
             <Score value={hit.score} large />
             <div>
+              {hit.isNew && <span className="new">Ny</span>}
               <a href={hit.url} target="_blank" rel="noreferrer"><b>{hit.title}</b></a>
               <div className="meta">
                 {[hit.employer, hit.municipality, hit.deadline && `sök senast ${date(hit.deadline)}`].filter(Boolean).join(' · ')}

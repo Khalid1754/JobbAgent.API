@@ -41,10 +41,19 @@ public record ApplicationDto(
 }
 
 public record RunSummaryDto(Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
-    Guid? SourceRunId, Guid? ApplicationId, DateTime CreatedAt, DateTime? FinishedAt)
+    Guid? SourceRunId, Guid? ApplicationId, Guid? WatchId, DateTime CreatedAt, DateTime? FinishedAt)
 {
     public static RunSummaryDto From(Run r) =>
-        new(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.SourceRunId, r.ApplicationId, r.CreatedAt, r.FinishedAt);
+        new(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.SourceRunId, r.ApplicationId, r.WatchId, r.CreatedAt, r.FinishedAt);
+}
+
+public record SaveWatchRequest(string? Location, string? Keywords, bool RemoteOnly, int? MinScore, bool? Enabled);
+
+public record WatchDto(Guid Id, string Title, string? Location, string? Keywords, bool RemoteOnly, int MinScore, bool Enabled,
+    DateTime? LastRunAt, Guid? LastRunId, int NewMatches)
+{
+    public static WatchDto From(Watch w) => new(w.Id, Services.Watches.Title(w.Keywords, w.Location, w.RemoteOnly), w.Location, w.Keywords,
+        w.RemoteOnly, w.MinScore, w.Enabled, w.LastRunAt, w.LastRunId, w.NewMatches);
 }
 
 public record StepDto(int Sequence, string Agent, string? ToAgent, StepKind Kind, string Summary, string? Detail, DateTime CreatedAt)

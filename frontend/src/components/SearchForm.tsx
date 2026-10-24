@@ -1,10 +1,17 @@
 import { useState, type FormEvent } from 'react'
 import type { NewSearch } from '../api'
 
-export default function SearchForm({ onSearch, disabled }: { onSearch: (search: NewSearch) => Promise<void>; disabled: boolean }) {
+export interface SearchOptions {
+  watch: boolean
+  minScore: number
+}
+
+export default function SearchForm({ onSearch, disabled }: { onSearch: (search: NewSearch, options: SearchOptions) => Promise<void>; disabled: boolean }) {
   const [location, setLocation] = useState('')
   const [keywords, setKeywords] = useState('')
   const [remoteOnly, setRemoteOnly] = useState(false)
+  const [watch, setWatch] = useState(false)
+  const [minScore, setMinScore] = useState(70)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -13,7 +20,7 @@ export default function SearchForm({ onSearch, disabled }: { onSearch: (search: 
     setBusy(true)
     setError(null)
     try {
-      await onSearch({ location, keywords, remoteOnly })
+      await onSearch({ location, keywords, remoteOnly }, { watch, minScore })
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -41,6 +48,13 @@ export default function SearchForm({ onSearch, disabled }: { onSearch: (search: 
       <label className="check">
         <input type="checkbox" checked={remoteOnly} onChange={e => setRemoteOnly(e.target.checked)} />
         Bara jobb på distans
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={watch} onChange={e => setWatch(e.target.checked)} />
+        Bevaka sökningen: kör den automatiskt varje morgon och visa nya annonser som matchar minst
+        <select className="inline" value={minScore} disabled={!watch} onChange={e => setMinScore(Number(e.target.value))}>
+          {[50, 60, 70, 80, 90].map(n => <option key={n} value={n}>{n} %</option>)}
+        </select>
       </label>
       <button disabled={busy || disabled}>{busy ? 'Startar…' : 'Sök jobb'}</button>
       {error && <p className="error">{error}</p>}

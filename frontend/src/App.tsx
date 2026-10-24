@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, type Application, type NewApplication, type NewLetter, type NewSearch, type RunSummary } from './api'
+import { api, type Application, type NewApplication, type NewLetter, type NewSearch, type RunSummary, type Watch } from './api'
 import ApplicationEditor from './components/ApplicationEditor'
 import Board from './components/Board'
 import CvPanel from './components/CvPanel'
 import LetterForm from './components/LetterForm'
 import RunList from './components/RunList'
 import RunView from './components/RunView'
-import SearchForm from './components/SearchForm'
+import SearchForm, { type SearchOptions } from './components/SearchForm'
+import WatchList from './components/WatchList'
 
 type Tab = 'search' | 'letter' | 'board' | 'cv'
 
@@ -25,10 +26,18 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
   const [adding, setAdding] = useState(false)
+  const [watches, setWatches] = useState<Watch[]>([])
 
   const refresh = useCallback(() => {
     api.listRuns().then(setRuns, e => setError((e as Error).message))
+    api.listWatches().then(setWatches, () => {})
   }, [])
+
+  // Bevakningarna körs i bakgrunden, så historiken hämtas om då och då.
+  useEffect(() => {
+    const timer = setInterval(refresh, 5 * 60 * 1000)
+    return () => clearInterval(timer)
+  }, [refresh])
 
   useEffect(() => {
     refresh()
@@ -44,7 +53,30 @@ export default function App() {
     setSelected(run.id)
   }
 
-  const search = async (s: NewSearch) => open(await api.search(s))
+  async function search(s: NewSearch, options: SearchOptions) {
+    if (!options.watch) return open(await api.search(s))
+    const watch = await api.createWatch({ ...s, minScore: options.minScore })
+    open(await api.runWatch(watch.id))
+    refresh()
+  }
+
+  // Öppnar en körning. Är det en bevaknings senaste sökning räknas de nya annonserna som sedda.
+  function select(id: string) {
+    setSelected(id)
+    const watch = watches.find(w => w.lastRunId === id && w.newMatches > 0)
+    if (watch) api.markWatchSeen(watch.id).then(() => setWatches(list => list.map(w => (w.id === watch.id ? { ...w, newMatches: 0 } : w))), () => {})
+  }
+
+  const runWatch = async (w: Watch) => { open(await api.runWatch(w.id)); refresh() }
+  const toggleWatch = async (w: Watch) => {
+    const updated = await api.updateWatch(w.id, { ...w, enabled: !w.enabled })
+    setWatches(list => list.map(x => (x.id === w.id ? updated : x)))
+  }
+  const deleteWatch = async (w: Watch) => {
+    await api.deleteWatch(w.id)
+    setWatches(list => list.filter(x => x.id !== w.id))
+  }
+  const newMatches = watches.reduce((sum, w) => sum + w.newMatches, 0)
   const createLetter = async (l: NewLetter) => open(await api.createLetter(l))
 
   const upsert = (a: Application) => setApplications(list => [a, ...list.filter(x => x.id !== a.id)])
@@ -98,22 +130,28 @@ export default function App() {
         <aside>
           <nav className="tabs">
             {TABS.map(t => (
-              <button key={t.id} className={!current && tab === t.id ? 'active' : ''} onClick={() => showTab(t.id)}>{t.label}</button>
+              <button key={t.id} className={!current && tab === t.id ? 'active' : ''} onClick={() => showTab(t.id)}>
+                {t.label}
+                {t.id === 'search' && newMatches > 0 && <span className="count">{newMatches}</span>}
+              </button>
             ))}
           </nav>
           <h3>Historik</h3>
-          <RunList runs={runs} selected={selected} onSelect={setSelected} />
+          <RunList runs={runs} selected={selected} onSelect={select} />
         </aside>
         <div>
           {current ? (
             <RunView key={current.id} run={current} onFinished={refresh} onDelete={() => remove(current.id)} onCreateLetter={createLetter}
               applications={applications} onSaveJob={saveJob} onPrepareInterview={prepareInterview} />
           ) : tab === 'search' ? (
-            <SearchForm onSearch={search} disabled={!canRun} />
+            <>
+              <SearchForm onSearch={search} disabled={!canRun} />
+              <WatchList watches={watches} onOpen={select} onRun={runWatch} onToggle={toggleWatch} onDelete={deleteWatch} />
+            </>
           ) : tab === 'letter' ? (
             <LetterForm onCreate={createLetter} disabled={!canRun} />
           ) : tab === 'board' ? (
-            <Board applications={applications} onUpdate={updateJob} onDelete={deleteJob} onAdd={() => setAdding(true)} onOpenLetter={setSelected}
+            <Board applications={applications} onUpdate={updateJob} onDelete={deleteJob} onAdd={() => setAdding(true)} onOpenLetter={select}
               onPrepareInterview={a => prepareInterview(a.letterRunId ? { letterRunId: a.letterRunId } : { applicationId: a.id })} />
           ) : (
             <CvPanel onSaved={() => setStatus(s => ({ ...s, hasCv: true }))} />

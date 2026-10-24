@@ -150,3 +150,14 @@ ul.tips { padding-left: 0; list-style: none; display: grid; gap: 10px; margin: 0
 .example { display: flex; gap: 8px; align-items: center; margin-top: 4px; font-style: italic; }
 .example q { flex: 1; }
 button.small { padding: 2px 8px; font-size: 12px; }
+
+/* Bevakningar */
+ul.watches { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+ul.watches li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--border); }
+ul.watches li > div { flex: 1; min-width: 180px; }
+ul.watches li.paused { opacity: .6; }
+ul.watches button { padding: 6px 12px; }
+button.danger-text { color: var(--danger); border-color: var(--border); }
+select.inline { width: auto; padding: 2px 4px; margin-left: 4px; }
+.new { font-size: 11px; font-weight: 700; color: var(--on-accent); background: var(--accent); border-radius: 999px; padding: 1px 6px; margin-right: 6px; vertical-align: middle; }
+.tabs .count { float: right; font-size: 12px; font-weight: 700; color: var(--on-accent); background: var(--accent); border-radius: 999px; padding: 0 8px; }

@@ -9,6 +9,7 @@ public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : 
     public DbSet<Run> Runs => Set<Run>();
     public DbSet<AgentStep> Steps => Set<AgentStep>();
     public DbSet<JobApplication> Applications => Set<JobApplication>();
+    public DbSet<Watch> Watches => Set<Watch>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -43,6 +44,11 @@ public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : 
             e.Property(a => a.Notes).HasMaxLength(4000);
             e.HasIndex(a => a.PlatsbankenId);
             e.HasIndex(a => a.LetterRunId);
+        });
+        b.Entity<Watch>(e =>
+        {
+            e.Property(w => w.Location).HasMaxLength(100);
+            e.Property(w => w.Keywords).HasMaxLength(200);
         });
         b.Entity<AgentStep>(e =>
         {

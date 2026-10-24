@@ -60,6 +60,7 @@ export interface RunSummary {
   matchScore?: number
   sourceRunId?: string
   applicationId?: string
+  watchId?: string
   createdAt: string
   finishedAt?: string
 }
@@ -73,6 +74,28 @@ export interface SearchHit {
   deadline?: string
   score: number
   reason: string
+  isNew?: boolean
+}
+
+export interface Watch {
+  id: string
+  title: string
+  location?: string
+  keywords?: string
+  remoteOnly: boolean
+  minScore: number
+  enabled: boolean
+  lastRunAt?: string
+  lastRunId?: string
+  newMatches: number
+}
+
+export interface SaveWatch {
+  location?: string
+  keywords?: string
+  remoteOnly: boolean
+  minScore?: number
+  enabled?: boolean
 }
 
 export interface Requirements {
@@ -177,6 +200,12 @@ export const api = {
   saveLetter: (id: string, letter: string) => request<void>(`/api/runs/${id}/letter`, json('PUT', { letter })),
   deleteRun: (id: string) => request<void>(`/api/runs/${id}`, { method: 'DELETE' }),
   eventsUrl: (id: string) => `/api/runs/${id}/events`,
+  listWatches: () => request<Watch[]>('/api/watches'),
+  createWatch: (w: SaveWatch) => request<Watch>('/api/watches', json('POST', w)),
+  updateWatch: (id: string, w: SaveWatch) => request<Watch>(`/api/watches/${id}`, json('PUT', w)),
+  runWatch: (id: string) => request<RunSummary>(`/api/watches/${id}/run`, { method: 'POST' }),
+  markWatchSeen: (id: string) => request<void>(`/api/watches/${id}/seen`, { method: 'POST' }),
+  deleteWatch: (id: string) => request<void>(`/api/watches/${id}`, { method: 'DELETE' }),
   listApplications: () => request<Application[]>('/api/applications'),
   createApplication: (a: NewApplication) => request<Application>('/api/applications', json('POST', a)),
   updateApplication: (a: Application) => request<Application>(`/api/applications/${a.id}`, json('PUT', a)),

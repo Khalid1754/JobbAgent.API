@@ -28,10 +28,9 @@ public static class RunEndpoints
                 return Results.BadRequest(new { error = "Lägg in ditt CV först." });
             var location = Clean(request.Location, 100);
             var keywords = Clean(request.Keywords, 200);
-            var title = (keywords ?? "Jobb som passar mitt CV") + (location is null ? "" : $" i {location}") + (request.RemoteOnly ? " (distans)" : "");
             return await EnqueueAsync(db, queue, new Run
             {
-                Kind = RunKind.Search, Title = Text.Truncate(title, 300),
+                Kind = RunKind.Search, Title = Watches.Title(keywords, location, request.RemoteOnly),
                 Location = location, Keywords = keywords, RemoteOnly = request.RemoteOnly,
             }, ct);
         });
@@ -154,7 +153,7 @@ public static class RunEndpoints
             await db.Runs.AsNoTracking()
                 .OrderByDescending(r => r.CreatedAt)
                 .Take(100)
-                .Select(r => new RunSummaryDto(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.SourceRunId, r.ApplicationId, r.CreatedAt, r.FinishedAt))
+                .Select(r => new RunSummaryDto(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.SourceRunId, r.ApplicationId, r.WatchId, r.CreatedAt, r.FinishedAt))
                 .ToListAsync(ct));
 
         runs.MapGet("/{id:guid}", async (Guid id, JobbAgentDbContext db, CancellationToken ct) =>
@@ -195,7 +194,7 @@ public static class RunEndpoints
             TypedResults.ServerSentEvents(StreamAsync(id, db, events, ct)));
     }
 
-    private static async Task<IResult> EnqueueAsync(JobbAgentDbContext db, RunQueue queue, Run run, CancellationToken ct)
+    internal static async Task<IResult> EnqueueAsync(JobbAgentDbContext db, RunQueue queue, Run run, CancellationToken ct)
     {
         db.Runs.Add(run);
         await db.SaveChangesAsync(ct);

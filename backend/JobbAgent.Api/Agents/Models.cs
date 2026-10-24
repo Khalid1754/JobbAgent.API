@@ -18,7 +18,7 @@ public record Ranking(RankedAd[] Ads);
 // En annons i sökresultatet, med Matcharens bedömning.
 public record SearchHit(
     string Id, string Title, string? Employer, string? Municipality, string Url,
-    DateTime? Deadline, int Score, string Reason);
+    DateTime? Deadline, int Score, string Reason, bool IsNew = false);
 
 public record AdRequirements(
     [property: Description("Tjänstens titel.")] string Title,
