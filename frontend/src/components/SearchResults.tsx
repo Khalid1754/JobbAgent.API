@@ -56,7 +56,8 @@ export default function SearchResults({ hits, cvId, applications, onCreateLetter
               {hit.isNew && <span className="new">{t('Ny')}</span>}
               <a href={hit.url} target="_blank" rel="noreferrer"><b>{hit.title}</b></a>
               <div className="meta">
-                {[hit.employer, hit.municipality, hit.deadline && t('sök senast {date}', { date: new Date(hit.deadline).toLocaleDateString(locale) })].filter(Boolean).join(' · ')}
+                {[hit.employer, hit.municipality, hit.deadline && t('sök senast {date}', { date: new Date(hit.deadline).toLocaleDateString(locale) }),
+                  t('via {source}', { source: hit.source ?? 'Platsbanken' })].filter(Boolean).join(' · ')}
               </div>
               <div>{hit.reason}</div>
             </div>

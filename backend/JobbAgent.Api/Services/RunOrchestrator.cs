@@ -59,7 +59,7 @@ public class RunOrchestrator(
     private async Task SearchAsync(JobbAgentDbContext db, Run run, string cv, StepLog log, Action<string> setCurrent, CancellationToken ct)
     {
         setCurrent(Searcher.Name);
-        await log.AddAsync(Searcher.Name, StepKind.Started, L("Läser ditt CV och söker i Platsbanken", "Reading your CV and searching Platsbanken"), ct: ct);
+        await log.AddAsync(Searcher.Name, StepKind.Started, L("Läser ditt CV och söker bland jobbannonserna", "Reading your CV and searching the job ads"), ct: ct);
         var result = await searcher.SearchAsync(cv, run.Location, run.Keywords, run.RemoteOnly, ct);
         await log.AddAsync(Searcher.Name, StepKind.Completed,
             L($"Hittade {result.Ads.Count} annonser med {result.Queries.Count} sökningar", $"Found {result.Ads.Count} ads with {result.Queries.Count} searches"),

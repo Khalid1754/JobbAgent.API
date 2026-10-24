@@ -51,7 +51,7 @@ public class Matcher(ILlm llm)
             {
                 var r = scores.GetValueOrDefault(i + 1);
                 return new SearchHit(ad.Id, ad.Title, ad.Employer, ad.Municipality, ad.Url, ad.Deadline,
-                    Math.Clamp(r?.Score ?? 0, 0, 100), r?.Reason ?? L("Ingen bedömning.", "No assessment."));
+                    Math.Clamp(r?.Score ?? 0, 0, 100), r?.Reason ?? L("Ingen bedömning.", "No assessment."), Source: ad.Source);
             })
             .OrderByDescending(h => h.Score)
             .ToList();

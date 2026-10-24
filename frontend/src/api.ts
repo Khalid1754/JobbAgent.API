@@ -87,6 +87,7 @@ export interface SearchHit {
   score: number
   reason: string
   isNew?: boolean
+  source?: string
 }
 
 export interface Watch {
@@ -203,7 +204,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 const json = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) })
 
 export const api = {
-  status: () => request<{ aiEnabled: boolean; hasCv: boolean }>('/api/status'),
+  status: () => request<{ aiEnabled: boolean; hasCv: boolean; jsearch?: boolean }>('/api/status'),
   listCvs: () => request<Cv[]>('/api/cvs'),
   createCv: (cv: Contact & { name: string; cvText: string }) => request<Cv>('/api/cvs', json('POST', cv)),
   updateCv: (cv: Cv) => request<Cv>(`/api/cvs/${cv.id}`, json('PUT', cv)),

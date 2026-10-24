@@ -6,7 +6,7 @@ namespace JobbAgent.Api.Agents;
 
 public record SearchResult(SearchPlan Plan, IReadOnlyList<string> Queries, IReadOnlyList<JobAd> Ads);
 
-// Sökare: läser CV:t, tar fram sökfraser och hämtar annonser från Platsbanken.
+// Sökare: läser CV:t, tar fram sökfraser och hämtar annonser från jobbsajterna (Platsbanken och ev. JSearch).
 public class Searcher(ILlm llm, IJobBoard board, IConfiguration config, ILogger<Searcher> logger)
 {
     public const string Name = "Sökare";
@@ -14,7 +14,7 @@ public class Searcher(ILlm llm, IJobBoard board, IConfiguration config, ILogger<
     private const string System = """
         You are Sökare in a team of AI agents that help a job seeker in Sweden. Read the CV and the
         wishes, and suggest 1–3 short search phrases (Swedish job titles work best, optionally one key
-        skill) for Arbetsförmedlingen's Platsbanken that would find jobs this person is qualified for.
+        skill) for job boards like Platsbanken, LinkedIn and Indeed that would find jobs this person is qualified for.
         Do not include the location; it is added separately.
         """;
 
@@ -47,12 +47,12 @@ public class Searcher(ILlm llm, IJobBoard board, IConfiguration config, ILogger<
             }
             catch (Exception e) when (e is HttpRequestException or TaskCanceledException or JsonException && !ct.IsCancellationRequested)
             {
-                logger.LogWarning(e, "Platsbanken-sökningen \"{Query}\" misslyckades.", query);
+                logger.LogWarning(e, "Sökningen \"{Query}\" misslyckades.", query);
                 failures++;
             }
         }
         if (failures == queries.Count)
-            throw new AgentException(L("Kunde inte nå Platsbanken. Kontrollera internetanslutningen och försök igen.", "Could not reach Platsbanken. Check your internet connection and try again."));
+            throw new AgentException(L("Kunde inte nå jobbsajterna. Kontrollera internetanslutningen och försök igen.", "Could not reach the job sites. Check your internet connection and try again."));
 
         return new SearchResult(plan, queries, Interleave(perQuery, MaxAds));
     }

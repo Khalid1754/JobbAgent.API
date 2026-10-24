@@ -68,13 +68,13 @@ public class OrchestratorTests
     }
 
     [Fact]
-    public async Task Search_WhenPlatsbankenIsDown_Fails()
+    public async Task Search_WhenJobSitesAreDown_Fails()
     {
         _board.Fail = true;
         var run = await ExecuteAsync(new Run { Kind = RunKind.Search, Title = "Sök" });
 
         Assert.Equal(RunStatus.Failed, run.Status);
-        Assert.Contains("Platsbanken", run.Error);
+        Assert.Contains("jobbsajterna", run.Error);
         Assert.DoesNotContain("Matchare", _llm.Calls);
     }
 

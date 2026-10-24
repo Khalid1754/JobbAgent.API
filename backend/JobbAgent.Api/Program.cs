@@ -20,7 +20,9 @@ builder.Services.AddHttpClient<PlatsbankenClient>(c =>
     c.Timeout = TimeSpan.FromSeconds(20);
     c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 });
-builder.Services.AddSingleton<IJobBoard>(sp => sp.GetRequiredService<PlatsbankenClient>());
+builder.Services.AddHttpClient<JSearchClient>(c => c.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddSingleton<JobBoards>();
+builder.Services.AddSingleton<IJobBoard>(sp => sp.GetRequiredService<JobBoards>());
 // Vissa jobbsajter visar bara sidan för vanliga webbläsare, så vi presenterar oss som en.
 builder.Services.AddHttpClient<AdReader>(c =>
 {

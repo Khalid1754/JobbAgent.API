@@ -12,9 +12,11 @@ interface Props {
   cvs: Cv[]
   onSearch: (search: NewSearch, options: SearchOptions) => Promise<void>
   disabled: boolean
+  // JSearch är på: annonser från LinkedIn, Indeed m.fl. kommer med.
+  moreSources: boolean
 }
 
-export default function SearchForm({ cvs, onSearch, disabled }: Props) {
+export default function SearchForm({ cvs, onSearch, disabled, moreSources }: Props) {
   const { t } = useLang()
   const [location, setLocation] = useState('')
   const [keywords, setKeywords] = useState('')
@@ -42,7 +44,10 @@ export default function SearchForm({ cvs, onSearch, disabled }: Props) {
     <form className="card form" onSubmit={submit}>
       <h2>{t('Hitta jobb åt mig')}</h2>
       <p className="muted">
-        <b>🔎 {t('Sökaren')}</b> {t('läser ditt CV, tar fram sökord och söker bland annonserna i Arbetsförmedlingens Platsbanken. Sedan ger')}{' '}
+        <b>🔎 {t('Sökaren')}</b>{' '}
+        {moreSources
+          ? t('läser ditt CV, tar fram sökord och söker i Platsbanken och bland annonser från LinkedIn, Indeed med flera. Sedan ger')
+          : t('läser ditt CV, tar fram sökord och söker bland annonserna i Arbetsförmedlingens Platsbanken. Sedan ger')}{' '}
         <b>🎯 {t('Matcharen')}</b> {t('varje annons en poäng utifrån hur väl du passar.')}
       </p>
       <div className="row">
