@@ -1,0 +1,48 @@
+import { useState } from 'react'
+import type { NewLetter, SearchHit } from '../api'
+import Score from './Score'
+
+const date = (iso: string) => new Date(iso).toLocaleDateString('sv-SE')
+
+export default function SearchResults({ hits, onCreateLetter }: { hits: SearchHit[]; onCreateLetter: (letter: NewLetter) => Promise<void> }) {
+  const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function write(hit: SearchHit) {
+    setBusy(hit.id)
+    setError(null)
+    try {
+      await onCreateLetter({ platsbankenId: hit.id })
+    } catch (err) {
+      setError((err as Error).message)
+      setBusy(null)
+    }
+  }
+
+  if (hits.length === 0)
+    return <div className="card">Inga annonser hittades. Prova en annan ort, egna sökord eller ta bort distansvalet.</div>
+
+  return (
+    <div className="card">
+      <h3>{hits.length} annonser, bäst matchning först</h3>
+      {error && <p className="error">{error}</p>}
+      <ul className="hits">
+        {hits.map(hit => (
+          <li key={hit.id}>
+            <Score value={hit.score} large />
+            <div>
+              <a href={hit.url} target="_blank" rel="noreferrer"><b>{hit.title}</b></a>
+              <div className="meta">
+                {[hit.employer, hit.municipality, hit.deadline && `sök senast ${date(hit.deadline)}`].filter(Boolean).join(' · ')}
+              </div>
+              <div>{hit.reason}</div>
+            </div>
+            <button className="secondary" disabled={busy !== null} onClick={() => write(hit)}>
+              {busy === hit.id ? 'Startar…' : 'Skriv brev'}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
