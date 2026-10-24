@@ -4,11 +4,13 @@ using JobbAgent.Api.Agents;
 
 namespace JobbAgent.Api.Models;
 
-public record SaveCvRequest(string CvText);
+public record SaveCvRequest(string CvText, string? FullName = null, string? Email = null, string? Phone = null,
+    string? City = null, string? Link = null);
 
-public record ProfileDto(string CvText, string? FileName, DateTime UpdatedAt)
+public record ProfileDto(string CvText, string? FileName, string? FullName, string? Email, string? Phone, string? City,
+    string? Link, DateTime UpdatedAt)
 {
-    public static ProfileDto From(Profile p) => new(p.CvText, p.FileName, p.UpdatedAt);
+    public static ProfileDto From(Profile p) => new(p.CvText, p.FileName, p.FullName, p.Email, p.Phone, p.City, p.Link, p.UpdatedAt);
 }
 
 public record CreateSearchRequest(string? Location, string? Keywords, bool RemoteOnly);

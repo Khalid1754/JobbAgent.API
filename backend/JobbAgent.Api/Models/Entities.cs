@@ -15,6 +15,12 @@ public class Profile
     public int Id { get; set; } = 1;
     public string CvText { get; set; } = "";
     public string? FileName { get; set; }
+    // Kontaktuppgifter överst i brevet när det laddas ner som Word eller PDF.
+    public string? FullName { get; set; }
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? City { get; set; }
+    public string? Link { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 

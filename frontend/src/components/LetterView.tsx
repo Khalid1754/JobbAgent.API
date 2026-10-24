@@ -31,11 +31,24 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
     flash('Kopierat!')
   }
 
-  function download() {
-    const url = URL.createObjectURL(new Blob([letter], { type: 'text/plain;charset=utf-8' }))
-    const name = `Personligt brev - ${run.company ?? run.title}.txt`.replace(/[\\/:*?"<>|]/g, '')
-    Object.assign(document.createElement('a'), { href: url, download: name }).click()
-    URL.revokeObjectURL(url)
+  // Word och PDF skapas av servern från det sparade brevet, så ändringar sparas först.
+  async function download(format: 'docx' | 'pdf' | 'txt') {
+    if (format === 'txt') {
+      const url = URL.createObjectURL(new Blob([letter], { type: 'text/plain;charset=utf-8' }))
+      const name = `Personligt brev - ${run.company ?? run.title}.txt`.replace(/[\\/:*?"<>|]/g, '')
+      Object.assign(document.createElement('a'), { href: url, download: name }).click()
+      URL.revokeObjectURL(url)
+      return
+    }
+    try {
+      if (letter !== saved) {
+        await api.saveLetter(run.id, letter)
+        setSaved(letter)
+      }
+      Object.assign(document.createElement('a'), { href: api.letterFileUrl(run.id, format) }).click()
+    } catch (err) {
+      flash((err as Error).message)
+    }
   }
 
   async function track(stage: Stage) {
@@ -101,7 +114,9 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
           {message && <span className="ok">{message}</span>}
           <button className="secondary" disabled={letter === saved || letter.trim().length === 0} onClick={save}>Spara ändringar</button>
           <button className="secondary" onClick={copy}>Kopiera</button>
-          <button className="secondary" onClick={download}>Ladda ner</button>
+          <button className="secondary" onClick={() => download('docx')} title="Med namn och kontaktuppgifter överst">Word</button>
+          <button className="secondary" onClick={() => download('pdf')} title="Med namn och kontaktuppgifter överst">PDF</button>
+          <button className="secondary" onClick={() => download('txt')}>Text</button>
         </div>
         <textarea className="letter" rows={22} value={letter} onChange={e => setLetter(e.target.value)} />
         <p className="meta">Läs alltid igenom brevet och gör det till ditt eget innan du skickar det.</p>

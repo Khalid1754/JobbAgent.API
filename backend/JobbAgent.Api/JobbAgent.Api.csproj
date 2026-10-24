@@ -16,4 +16,9 @@
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Typsnittet Caladea (SIL Open Font License) bäddas in i PDF-breven. -->
+    <EmbeddedResource Include="Resources\Fonts\*.ttf" />
+  </ItemGroup>
+
 </Project>

@@ -17,6 +17,11 @@ public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : 
         {
             e.Property(p => p.Id).ValueGeneratedNever();
             e.Property(p => p.FileName).HasMaxLength(260);
+            e.Property(p => p.FullName).HasMaxLength(100);
+            e.Property(p => p.Email).HasMaxLength(200);
+            e.Property(p => p.Phone).HasMaxLength(50);
+            e.Property(p => p.City).HasMaxLength(100);
+            e.Property(p => p.Link).HasMaxLength(300);
         });
         b.Entity<Run>(e =>
         {

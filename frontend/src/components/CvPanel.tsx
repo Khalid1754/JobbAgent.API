@@ -1,10 +1,19 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
-import { api, type Profile } from '../api'
+import { api, type Contact, type Profile } from '../api'
+
+const CONTACT_FIELDS: { key: keyof Contact; label: string; type: string; placeholder: string }[] = [
+  { key: 'fullName', label: 'Namn', type: 'text', placeholder: 'För- och efternamn' },
+  { key: 'email', label: 'E-post', type: 'email', placeholder: 'namn@exempel.se' },
+  { key: 'phone', label: 'Telefon', type: 'tel', placeholder: '070-123 45 67' },
+  { key: 'city', label: 'Ort', type: 'text', placeholder: 'Stockholm' },
+  { key: 'link', label: 'LinkedIn, GitHub eller portfolio', type: 'text', placeholder: 'linkedin.com/in/…' },
+]
 
 // Ditt CV: ladda upp en fil eller klistra in texten. Agenterna läser det vid varje körning.
 export default function CvPanel({ onSaved }: { onSaved: (profile: Profile) => void }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [text, setText] = useState('')
+  const [contact, setContact] = useState<Contact>({})
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -12,6 +21,7 @@ export default function CvPanel({ onSaved }: { onSaved: (profile: Profile) => vo
     api.profile().then(p => {
       setProfile(p)
       setText(p?.cvText ?? '')
+      setContact(p ?? {})
     }, () => {})
   }, [])
 
@@ -22,6 +32,7 @@ export default function CvPanel({ onSaved }: { onSaved: (profile: Profile) => vo
       const saved = await action()
       setProfile(saved)
       setText(saved.cvText)
+      setContact(saved)
       setMessage({ ok: true, text: done })
       onSaved(saved)
     } catch (err) {
@@ -52,8 +63,21 @@ export default function CvPanel({ onSaved }: { onSaved: (profile: Profile) => vo
         Eller klistra in texten
         <textarea rows={16} value={text} onChange={e => setText(e.target.value)} placeholder="Namn, kontaktuppgifter, erfarenhet, utbildning, kompetenser…" />
       </label>
+      <fieldset>
+        <legend>Kontaktuppgifter i brevhuvudet (Word och PDF)</legend>
+        <div className="row">
+          {CONTACT_FIELDS.map(f => (
+            <label key={f.key}>
+              {f.label}
+              <input type={f.type} value={contact[f.key] ?? ''} placeholder={f.placeholder}
+                onChange={e => setContact(c => ({ ...c, [f.key]: e.target.value }))} />
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <div className="actions start">
-        <button disabled={busy || text.trim().length < 50 || text === profile?.cvText} onClick={() => run(() => api.saveCv(text), 'CV:t är sparat.')}>
+        <button disabled={busy || text.trim().length < 50 || (text === profile?.cvText && CONTACT_FIELDS.every(f => (contact[f.key] ?? '') === (profile?.[f.key] ?? '')))}
+          onClick={() => run(() => api.saveCv(text, contact), 'CV:t är sparat.')}>
           Spara CV
         </button>
         {message && <span className={message.ok ? 'ok' : 'error'}>{message.text}</span>}

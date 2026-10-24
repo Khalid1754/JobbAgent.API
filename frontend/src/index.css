@@ -161,3 +161,5 @@ button.danger-text { color: var(--danger); border-color: var(--border); }
 select.inline { width: auto; padding: 2px 4px; margin-left: 4px; }
 .new { font-size: 11px; font-weight: 700; color: var(--on-accent); background: var(--accent); border-radius: 999px; padding: 1px 6px; margin-right: 6px; vertical-align: middle; }
 .tabs .count { float: right; font-size: 12px; font-weight: 700; color: var(--on-accent); background: var(--accent); border-radius: 999px; padding: 0 8px; }
+fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px 12px; margin: 0; }
+legend { font-size: 13px; color: var(--muted); padding: 0 4px; }

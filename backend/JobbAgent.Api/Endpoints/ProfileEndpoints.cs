@@ -18,7 +18,7 @@ public static class ProfileEndpoints
             await db.Profiles.FindAsync([1], ct) is { } p ? Results.Ok(ProfileDto.From(p)) : Results.NotFound());
 
         profile.MapPut("/", async (SaveCvRequest request, JobbAgentDbContext db, CancellationToken ct) =>
-            await SaveAsync(db, Text.Tidy(request.CvText ?? ""), null, ct));
+            await SaveAsync(db, Text.Tidy(request.CvText ?? ""), null, request, ct));
 
         profile.MapPost("/upload", async (IFormFile file, JobbAgentDbContext db, CancellationToken ct) =>
         {
@@ -27,7 +27,7 @@ public static class ProfileEndpoints
             try
             {
                 await using var stream = file.OpenReadStream();
-                return await SaveAsync(db, CvReader.ReadText(stream, file.FileName), Path.GetFileName(file.FileName), ct);
+                return await SaveAsync(db, CvReader.ReadText(stream, file.FileName), Path.GetFileName(file.FileName), null, ct);
             }
             catch (DocumentException e)
             {
@@ -36,7 +36,8 @@ public static class ProfileEndpoints
         }).DisableAntiforgery();
     }
 
-    private static async Task<IResult> SaveAsync(JobbAgentDbContext db, string cv, string? fileName, CancellationToken ct)
+    private static async Task<IResult> SaveAsync(JobbAgentDbContext db, string cv, string? fileName, SaveCvRequest? contact,
+        CancellationToken ct)
     {
         if (cv.Length < MinCvLength)
             return Results.BadRequest(new { error = $"CV:t är för kort (minst {MinCvLength} tecken)." });
@@ -45,10 +46,27 @@ public static class ProfileEndpoints
 
         var profile = await db.Profiles.FindAsync([1], ct);
         if (profile is null) db.Profiles.Add(profile = new Profile());
+        // En ny fil ersätter texten; sparas texten för hand ligger filnamnet kvar om texten inte ändrats.
+        if (fileName is not null || profile.CvText != cv) profile.FileName = fileName;
         profile.CvText = cv;
-        profile.FileName = fileName;
+        if (contact is not null)
+        {
+            profile.FullName = Clean(contact.FullName, 100);
+            profile.Email = Clean(contact.Email, 200);
+            profile.Phone = Clean(contact.Phone, 50);
+            profile.City = Clean(contact.City, 100);
+            profile.Link = Clean(contact.Link, 300);
+        }
+        // Tomma kontaktuppgifter fylls i med det som går att hitta i CV:t.
+        var guess = ContactInfo.Guess(cv);
+        profile.FullName ??= guess.FullName;
+        profile.Email ??= guess.Email;
+        profile.Phone ??= guess.Phone;
         profile.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return Results.Ok(ProfileDto.From(profile));
     }
+
+    private static string? Clean(string? value, int max) =>
+        string.IsNullOrWhiteSpace(value) ? null : Text.Truncate(value.Trim(), max);
 }

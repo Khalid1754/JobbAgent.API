@@ -176,6 +176,20 @@ public static class RunEndpoints
             return Results.NoContent();
         });
 
+        // Brevet som Word eller PDF, med dina kontaktuppgifter överst.
+        runs.MapGet("/{id:guid}/letter.{format:regex(^(docx|pdf)$)}", async (Guid id, string format, JobbAgentDbContext db,
+            IConfiguration config, CancellationToken ct) =>
+        {
+            var run = await db.Runs.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id && r.Kind == RunKind.Letter, ct);
+            if (run?.Letter is null) return Results.NotFound();
+            var profile = await db.Profiles.AsNoTracking().FirstOrDefaultAsync(ct);
+            var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Watches.Zone(config)).Date;
+            var letter = LetterContent.From(run, profile, today);
+            return format == "pdf"
+                ? Results.File(LetterDocument.Pdf(letter), "application/pdf", letter.FileName("pdf"))
+                : Results.File(LetterDocument.Docx(letter), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", letter.FileName("docx"));
+        });
+
         runs.MapDelete("/{id:guid}", async (Guid id, JobbAgentDbContext db, CancellationToken ct) =>
         {
             var run = await db.Runs.FirstOrDefaultAsync(r => r.Id == id, ct);

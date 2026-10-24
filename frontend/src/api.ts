@@ -35,7 +35,15 @@ export interface NewApplication {
   stage?: Stage
 }
 
-export interface Profile {
+export interface Contact {
+  fullName?: string
+  email?: string
+  phone?: string
+  city?: string
+  link?: string
+}
+
+export interface Profile extends Contact {
   cvText: string
   fileName?: string
   updatedAt: string
@@ -186,7 +194,7 @@ const json = (method: string, body: unknown): RequestInit => ({ method, body: JS
 export const api = {
   status: () => request<{ aiEnabled: boolean; hasCv: boolean }>('/api/status'),
   profile: () => fetch('/api/profile').then(r => (r.status === 404 ? null : r.json() as Promise<Profile>)),
-  saveCv: (cvText: string) => request<Profile>('/api/profile', json('PUT', { cvText })),
+  saveCv: (cvText: string, contact: Contact) => request<Profile>('/api/profile', json('PUT', { cvText, ...contact })),
   uploadCv: (file: File) => {
     const form = new FormData()
     form.append('file', file)
@@ -197,6 +205,7 @@ export const api = {
   search: (search: NewSearch) => request<RunSummary>('/api/searches', json('POST', search)),
   createLetter: (letter: NewLetter) => request<RunSummary>('/api/letters', json('POST', letter)),
   createInterview: (from: { letterRunId?: string; applicationId?: string }) => request<RunSummary>('/api/interviews', json('POST', from)),
+  letterFileUrl: (id: string, format: 'docx' | 'pdf') => `/api/runs/${id}/letter.${format}`,
   saveLetter: (id: string, letter: string) => request<void>(`/api/runs/${id}/letter`, json('PUT', { letter })),
   deleteRun: (id: string) => request<void>(`/api/runs/${id}`, { method: 'DELETE' }),
   eventsUrl: (id: string) => `/api/runs/${id}/events`,
