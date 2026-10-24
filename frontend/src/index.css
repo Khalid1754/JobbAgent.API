@@ -94,6 +94,7 @@ nav.tabs, .tabs { display: grid; gap: 6px; }
 .tabs button { background: var(--card); color: var(--text); border: 1px solid var(--border); font-weight: 500; text-align: left; }
 .tabs button.active { border-color: var(--accent); background: var(--soft); color: var(--accent); font-weight: 600; }
 .tabs.small { grid-auto-flow: column; justify-content: start; }
+.tabs.small.wrap { display: flex; flex-wrap: wrap; }
 .tabs.small button { padding: 6px 12px; }
 
 ul.runs .icon { flex: none; }

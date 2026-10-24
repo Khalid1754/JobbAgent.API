@@ -56,7 +56,7 @@ public class ApplicationTests : IDisposable
     [Fact]
     public async Task FromLetter_CopiesJobDetails()
     {
-        await _client.PutAsJsonAsync("/api/profile", new { cvText = OrchestratorTests.Cv });
+        await TestApp.SaveCvAsync(_client, OrchestratorTests.Cv);
         var letter = await _app.RunLetterAsync(_client);
 
         var application = await CreateAsync(new { letterRunId = letter.Id, stage = "applied" });
@@ -72,7 +72,7 @@ public class ApplicationTests : IDisposable
     [Fact]
     public async Task LetterToSavedAd_IsLinkedToSameCard()
     {
-        await _client.PutAsJsonAsync("/api/profile", new { cvText = OrchestratorTests.Cv });
+        await TestApp.SaveCvAsync(_client, OrchestratorTests.Cv);
         var saved = await CreateAsync(new { title = "Backendutvecklare", platsbankenId = "777", matchScore = 60 });
         var letter = await TestApp.RunToEndAsync(_client, await _client.PostAsJsonAsync("/api/letters", new { platsbankenId = "777" }));
 
@@ -83,7 +83,7 @@ public class ApplicationTests : IDisposable
     [Fact]
     public async Task Interview_CanStartFromLetterOrBoard()
     {
-        await _client.PutAsJsonAsync("/api/profile", new { cvText = OrchestratorTests.Cv });
+        await TestApp.SaveCvAsync(_client, OrchestratorTests.Cv);
         var letter = await _app.RunLetterAsync(_client);
         var fromLetter = await TestApp.RunToEndAsync(_client, await _client.PostAsJsonAsync("/api/interviews", new { letterRunId = letter.Id }));
         Assert.Equal((RunKind.Interview, "Intervju: Backendutvecklare", letter.Id), (fromLetter.Kind, fromLetter.Title, fromLetter.SourceRunId));

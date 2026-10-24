@@ -17,7 +17,7 @@ public static class Watches
     public static Run CreateRun(Watch w) => new()
     {
         Kind = RunKind.Search, WatchId = w.Id, Title = Text.Truncate("Bevakning: " + Title(w.Keywords, w.Location, w.RemoteOnly), 300),
-        Location = w.Location, Keywords = w.Keywords, RemoteOnly = w.RemoteOnly,
+        Location = w.Location, Keywords = w.Keywords, RemoteOnly = w.RemoteOnly, CvId = w.CvId,
     };
 
     // Markerar annonser som bevakningen inte visat förut och räknar hur många av dem som matchar bra.

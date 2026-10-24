@@ -21,6 +21,8 @@ public static class WatchEndpoints
         {
             if (await db.Watches.CountAsync(ct) >= MaxWatches)
                 return Results.BadRequest(new { error = $"Du kan ha högst {MaxWatches} bevakningar." });
+            if (await Cvs.CheckAsync(db, request.CvId, ct) is { } cvError && request.CvId is not null)
+                return Results.BadRequest(new { error = cvError });
             var watch = new Watch();
             Apply(watch, request);
             db.Watches.Add(watch);
@@ -32,6 +34,8 @@ public static class WatchEndpoints
         {
             var watch = await db.Watches.FirstOrDefaultAsync(w => w.Id == id, ct);
             if (watch is null) return Results.NotFound();
+            if (await Cvs.CheckAsync(db, request.CvId, ct) is { } cvError && request.CvId is not null)
+                return Results.BadRequest(new { error = cvError });
             Apply(watch, request);
             await db.SaveChangesAsync(ct);
             return Results.Ok(WatchDto.From(watch));
@@ -42,8 +46,8 @@ public static class WatchEndpoints
         {
             var watch = await db.Watches.FirstOrDefaultAsync(w => w.Id == id, ct);
             if (watch is null) return Results.NotFound();
-            if (!await db.Profiles.AnyAsync(ct))
-                return Results.BadRequest(new { error = "Lägg in ditt CV först." });
+            if (await Cvs.CheckAsync(db, watch.CvId, ct) is { } cvError)
+                return Results.BadRequest(new { error = cvError });
             watch.LastRunAt = DateTime.UtcNow;
             return await RunEndpoints.EnqueueAsync(db, queue, Watches.CreateRun(watch), ct);
         });
@@ -75,5 +79,6 @@ public static class WatchEndpoints
         watch.RemoteOnly = request.RemoteOnly;
         watch.MinScore = Math.Clamp(request.MinScore ?? watch.MinScore, 0, 100);
         watch.Enabled = request.Enabled ?? watch.Enabled;
+        watch.CvId = request.CvId;
     }
 }

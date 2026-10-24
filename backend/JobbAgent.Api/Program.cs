@@ -59,7 +59,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseCors();
 
-app.MapProfileEndpoints();
+app.MapCvEndpoints();
 app.MapRunEndpoints();
 app.MapApplicationEndpoints();
 app.MapWatchEndpoints();

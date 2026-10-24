@@ -43,7 +43,10 @@ export interface Contact {
   link?: string
 }
 
-export interface Profile extends Contact {
+export interface Cv extends Contact {
+  id: number
+  name: string
+  isDefault: boolean
   cvText: string
   fileName?: string
   updatedAt: string
@@ -93,6 +96,7 @@ export interface Watch {
   remoteOnly: boolean
   minScore: number
   enabled: boolean
+  cvId?: number
   lastRunAt?: string
   lastRunId?: string
   newMatches: number
@@ -104,6 +108,7 @@ export interface SaveWatch {
   remoteOnly: boolean
   minScore?: number
   enabled?: boolean
+  cvId?: number
 }
 
 export interface Requirements {
@@ -151,6 +156,7 @@ export interface Run extends RunSummary {
   adText?: string
   platsbankenId?: string
   language: Language
+  cvId?: number
   hits?: SearchHit[]
   requirements?: Requirements
   match?: Match
@@ -168,6 +174,7 @@ export interface NewSearch {
   location?: string
   keywords?: string
   remoteOnly: boolean
+  cvId?: number
 }
 
 export interface NewLetter {
@@ -175,6 +182,7 @@ export interface NewLetter {
   adUrl?: string
   platsbankenId?: string
   language?: Language
+  cvId?: number
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -193,18 +201,22 @@ const json = (method: string, body: unknown): RequestInit => ({ method, body: JS
 
 export const api = {
   status: () => request<{ aiEnabled: boolean; hasCv: boolean }>('/api/status'),
-  profile: () => fetch('/api/profile').then(r => (r.status === 404 ? null : r.json() as Promise<Profile>)),
-  saveCv: (cvText: string, contact: Contact) => request<Profile>('/api/profile', json('PUT', { cvText, ...contact })),
-  uploadCv: (file: File) => {
+  listCvs: () => request<Cv[]>('/api/cvs'),
+  createCv: (cv: Contact & { name: string; cvText: string }) => request<Cv>('/api/cvs', json('POST', cv)),
+  updateCv: (cv: Cv) => request<Cv>(`/api/cvs/${cv.id}`, json('PUT', cv)),
+  // Utan id blir filen ett nytt CV, annars ersätter den texten i det CV:t.
+  uploadCv: (file: File, id?: number) => {
     const form = new FormData()
     form.append('file', file)
-    return request<Profile>('/api/profile/upload', { method: 'POST', body: form })
+    return request<Cv>(id ? `/api/cvs/${id}/upload` : '/api/cvs/upload', { method: 'POST', body: form })
   },
+  setDefaultCv: (id: number) => request<void>(`/api/cvs/${id}/default`, { method: 'POST' }),
+  deleteCv: (id: number) => request<void>(`/api/cvs/${id}`, { method: 'DELETE' }),
   listRuns: () => request<RunSummary[]>('/api/runs'),
   getRun: (id: string) => request<Run>(`/api/runs/${id}`),
   search: (search: NewSearch) => request<RunSummary>('/api/searches', json('POST', search)),
   createLetter: (letter: NewLetter) => request<RunSummary>('/api/letters', json('POST', letter)),
-  createInterview: (from: { letterRunId?: string; applicationId?: string }) => request<RunSummary>('/api/interviews', json('POST', from)),
+  createInterview: (from: { letterRunId?: string; applicationId?: string; cvId?: number }) => request<RunSummary>('/api/interviews', json('POST', from)),
   letterFileUrl: (id: string, format: 'docx' | 'pdf') => `/api/runs/${id}/letter.${format}`,
   saveLetter: (id: string, letter: string) => request<void>(`/api/runs/${id}/letter`, json('PUT', { letter })),
   deleteRun: (id: string) => request<void>(`/api/runs/${id}`, { method: 'DELETE' }),

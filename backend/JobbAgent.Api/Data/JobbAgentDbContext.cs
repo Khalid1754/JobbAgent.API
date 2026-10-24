@@ -16,6 +16,7 @@ public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : 
         b.Entity<Profile>(e =>
         {
             e.Property(p => p.Id).ValueGeneratedNever();
+            e.Property(p => p.Name).HasMaxLength(60);
             e.Property(p => p.FileName).HasMaxLength(260);
             e.Property(p => p.FullName).HasMaxLength(100);
             e.Property(p => p.Email).HasMaxLength(200);

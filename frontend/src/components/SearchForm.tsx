@@ -1,17 +1,25 @@
 import { useState, type FormEvent } from 'react'
-import type { NewSearch } from '../api'
+import type { Cv, NewSearch } from '../api'
+import CvSelect from './CvSelect'
 
 export interface SearchOptions {
   watch: boolean
   minScore: number
 }
 
-export default function SearchForm({ onSearch, disabled }: { onSearch: (search: NewSearch, options: SearchOptions) => Promise<void>; disabled: boolean }) {
+interface Props {
+  cvs: Cv[]
+  onSearch: (search: NewSearch, options: SearchOptions) => Promise<void>
+  disabled: boolean
+}
+
+export default function SearchForm({ cvs, onSearch, disabled }: Props) {
   const [location, setLocation] = useState('')
   const [keywords, setKeywords] = useState('')
   const [remoteOnly, setRemoteOnly] = useState(false)
   const [watch, setWatch] = useState(false)
   const [minScore, setMinScore] = useState(70)
+  const [cvId, setCvId] = useState<number>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -20,7 +28,7 @@ export default function SearchForm({ onSearch, disabled }: { onSearch: (search: 
     setBusy(true)
     setError(null)
     try {
-      await onSearch({ location, keywords, remoteOnly }, { watch, minScore })
+      await onSearch({ location, keywords, remoteOnly, cvId }, { watch, minScore })
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -45,6 +53,7 @@ export default function SearchForm({ onSearch, disabled }: { onSearch: (search: 
           <input value={keywords} maxLength={200} onChange={e => setKeywords(e.target.value)} placeholder="t.ex. backend, .NET" />
         </label>
       </div>
+      <CvSelect cvs={cvs} value={cvId} onChange={setCvId} />
       <label className="check">
         <input type="checkbox" checked={remoteOnly} onChange={e => setRemoteOnly(e.target.checked)} />
         Bara jobb på distans

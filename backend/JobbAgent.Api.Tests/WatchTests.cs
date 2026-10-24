@@ -50,7 +50,7 @@ public class WatchTests : IDisposable
     [Fact]
     public async Task RunNow_MarksNewAdsAndRemembersThem()
     {
-        await _client.PutAsJsonAsync("/api/profile", new { cvText = OrchestratorTests.Cv });
+        await TestApp.SaveCvAsync(_client, OrchestratorTests.Cv);
         var created = await _client.PostAsJsonAsync("/api/watches", new { location = "Stockholm", remoteOnly = false, minScore = 70 });
         var watch = (await created.Content.ReadFromJsonAsync<WatchDto>(TestApp.Json))!;
         Assert.Equal("Jobb som passar mitt CV i Stockholm", watch.Title);
@@ -71,7 +71,7 @@ public class WatchTests : IDisposable
     [Fact]
     public async Task Scheduler_StartsDueWatches()
     {
-        await _client.PutAsJsonAsync("/api/profile", new { cvText = OrchestratorTests.Cv });
+        await TestApp.SaveCvAsync(_client, OrchestratorTests.Cv);
         await _client.PostAsJsonAsync("/api/watches", new { keywords = "backend" });
         await _client.PostAsJsonAsync("/api/watches", new { keywords = "avstängd", enabled = false });
         var scheduler = _app.Services.GetRequiredService<WatchScheduler>();

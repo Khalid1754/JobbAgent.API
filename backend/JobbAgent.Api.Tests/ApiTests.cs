@@ -43,6 +43,13 @@ public class TestApp : WebApplicationFactory<Program>
         return (await client.GetFromJsonAsync<RunDto>($"/api/runs/{run.Id}", Json))!;
     }
 
+    public static async Task<CvDto> SaveCvAsync(HttpClient client, string cvText, string? name = null)
+    {
+        var response = await client.PostAsJsonAsync("/api/cvs", new { cvText, name });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<CvDto>(Json))!;
+    }
+
     public async Task<RunDto> RunLetterAsync(HttpClient client) =>
         await RunToEndAsync(client, await client.PostAsJsonAsync("/api/letters", new { adText = AdText }));
 }
@@ -57,34 +64,9 @@ public class ApiTests : IDisposable
     public ApiTests() => _client = _app.CreateClient();
     public void Dispose() => _app.Dispose();
 
-    private Task SaveCvAsync() => _client.PutAsJsonAsync("/api/profile", new { cvText = OrchestratorTests.Cv });
+    private Task SaveCvAsync() => TestApp.SaveCvAsync(_client, OrchestratorTests.Cv);
 
     private Task<RunDto> RunToEndAsync(HttpResponseMessage created) => TestApp.RunToEndAsync(_client, created);
-
-    [Fact]
-    public async Task Profile_IsSavedAndValidated()
-    {
-        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync("/api/profile")).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await _client.PutAsJsonAsync("/api/profile", new { cvText = "för kort" })).StatusCode);
-
-        await SaveCvAsync();
-        var profile = (await _client.GetFromJsonAsync<ProfileDto>("/api/profile", Json))!;
-        Assert.Equal(OrchestratorTests.Cv, profile.CvText);
-        var status = await _client.GetFromJsonAsync<JsonElement>("/api/status");
-        Assert.True(status.GetProperty("hasCv").GetBoolean());
-    }
-
-    [Fact]
-    public async Task UploadedCv_IsRead()
-    {
-        using var form = new MultipartFormDataContent();
-        form.Add(new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(OrchestratorTests.Cv)), "file", "mitt-cv.txt");
-        var response = await _client.PostAsync("/api/profile/upload", form);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var profile = (await response.Content.ReadFromJsonAsync<ProfileDto>(Json))!;
-        Assert.Equal(("mitt-cv.txt", OrchestratorTests.Cv), (profile.FileName, profile.CvText));
-    }
 
     [Fact]
     public async Task WithoutCv_RunsAreRejected()

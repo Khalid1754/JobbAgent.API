@@ -76,7 +76,7 @@ public class LetterDocumentTests
     {
         using var app = new TestApp();
         var client = app.CreateClient();
-        await client.PutAsJsonAsync("/api/profile", new { cvText = "Khalid Hassan\n" + OrchestratorTests.Cv + " khalid@example.se" });
+        await TestApp.SaveCvAsync(client, "Khalid Hassan\n" + OrchestratorTests.Cv + " khalid@example.se");
         var letter = await app.RunLetterAsync(client);
 
         var pdf = await client.GetAsync($"/api/runs/{letter.Id}/letter.pdf");

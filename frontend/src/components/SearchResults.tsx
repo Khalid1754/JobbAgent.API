@@ -6,12 +6,13 @@ const date = (iso: string) => new Date(iso).toLocaleDateString('sv-SE')
 
 interface Props {
   hits: SearchHit[]
+  cvId?: number
   applications: Application[]
   onCreateLetter: (letter: NewLetter) => Promise<void>
   onSaveJob: (job: NewApplication) => Promise<void>
 }
 
-export default function SearchResults({ hits, applications, onCreateLetter, onSaveJob }: Props) {
+export default function SearchResults({ hits, cvId, applications, onCreateLetter, onSaveJob }: Props) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,7 +20,7 @@ export default function SearchResults({ hits, applications, onCreateLetter, onSa
     setBusy(hit.id)
     setError(null)
     try {
-      await onCreateLetter({ platsbankenId: hit.id })
+      await onCreateLetter({ platsbankenId: hit.id, cvId })
     } catch (err) {
       setError((err as Error).message)
       setBusy(null)

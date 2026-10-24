@@ -9,10 +9,12 @@ public enum RunKind { Search, Letter, Interview }
 // Vad som hände i ett steg: en agent börjar, blir klar, lämnar över till nästa eller misslyckas.
 public enum StepKind { Started, Completed, Handoff, Failed }
 
-// Ditt CV. Det finns bara en profil; agenterna läser den vid varje körning.
+// En version av ditt CV, t.ex. ett för utvecklarjobb och ett för andra jobb. Ett av dem är standard.
 public class Profile
 {
     public int Id { get; set; } = 1;
+    public string Name { get; set; } = "Mitt CV";
+    public bool IsDefault { get; set; }
     public string CvText { get; set; } = "";
     public string? FileName { get; set; }
     // Kontaktuppgifter överst i brevet när det laddas ner som Word eller PDF.
@@ -38,6 +40,9 @@ public class Run
     public string? Location { get; set; }
     public string? Keywords { get; set; }
     public bool RemoteOnly { get; set; }
+
+    // Vilket CV agenterna använder (null = standard-CV:t).
+    public int? CvId { get; set; }
 
     // Brev: själva annonsen och vilket språk brevet ska skrivas på (auto, sv eller en).
     public string? AdUrl { get; set; }
@@ -98,6 +103,7 @@ public class Watch
     public string? Keywords { get; set; }
     public bool RemoteOnly { get; set; }
     public int MinScore { get; set; } = 70;
+    public int? CvId { get; set; }
     public bool Enabled { get; set; } = true;
     // Annonser som redan visats, så att bara nya räknas nästa gång (JSON-lista med Platsbanken-id).
     public string SeenAdIdsJson { get; set; } = "[]";

@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import type { Language, NewLetter } from '../api'
+import type { Cv, Language, NewLetter } from '../api'
+import CvSelect from './CvSelect'
 
-export default function LetterForm({ onCreate, disabled }: { onCreate: (letter: NewLetter) => Promise<void>; disabled: boolean }) {
+export default function LetterForm({ cvs, onCreate, disabled }: { cvs: Cv[]; onCreate: (letter: NewLetter) => Promise<void>; disabled: boolean }) {
   const [mode, setMode] = useState<'url' | 'text'>('url')
   const [adUrl, setAdUrl] = useState('')
   const [adText, setAdText] = useState('')
   const [language, setLanguage] = useState<Language>('auto')
+  const [cvId, setCvId] = useState<number>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,7 +18,7 @@ export default function LetterForm({ onCreate, disabled }: { onCreate: (letter: 
     setBusy(true)
     setError(null)
     try {
-      await onCreate(mode === 'url' ? { adUrl: adUrl.trim(), language } : { adText, language })
+      await onCreate(mode === 'url' ? { adUrl: adUrl.trim(), language, cvId } : { adText, language, cvId })
     } catch (err) {
       setError((err as Error).message)
       // Om länken inte gick att läsa är nästa steg att klistra in texten.
@@ -48,6 +50,7 @@ export default function LetterForm({ onCreate, disabled }: { onCreate: (letter: 
           <textarea rows={10} value={adText} maxLength={20000} onChange={e => setAdText(e.target.value)} placeholder="Klistra in hela annonsen här…" />
         </label>
       )}
+      <CvSelect cvs={cvs} value={cvId} onChange={setCvId} />
       <label>
         Språk på brevet
         <select value={language} onChange={e => setLanguage(e.target.value as Language)}>

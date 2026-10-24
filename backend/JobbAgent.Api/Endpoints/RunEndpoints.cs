@@ -24,27 +24,27 @@ public static class RunEndpoints
 
         api.MapPost("/searches", async (CreateSearchRequest request, JobbAgentDbContext db, RunQueue queue, CancellationToken ct) =>
         {
-            if (!await db.Profiles.AnyAsync(ct))
-                return Results.BadRequest(new { error = "Lägg in ditt CV först." });
+            if (await Cvs.CheckAsync(db, request.CvId, ct) is { } cvError)
+                return Results.BadRequest(new { error = cvError });
             var location = Clean(request.Location, 100);
             var keywords = Clean(request.Keywords, 200);
             return await EnqueueAsync(db, queue, new Run
             {
                 Kind = RunKind.Search, Title = Watches.Title(keywords, location, request.RemoteOnly),
-                Location = location, Keywords = keywords, RemoteOnly = request.RemoteOnly,
+                Location = location, Keywords = keywords, RemoteOnly = request.RemoteOnly, CvId = request.CvId,
             }, ct);
         });
 
         api.MapPost("/letters", async (CreateLetterRequest request, JobbAgentDbContext db, RunQueue queue,
             IJobBoard board, AdReader reader, CancellationToken ct) =>
         {
-            if (!await db.Profiles.AnyAsync(ct))
-                return Results.BadRequest(new { error = "Lägg in ditt CV först." });
+            if (await Cvs.CheckAsync(db, request.CvId, ct) is { } cvError)
+                return Results.BadRequest(new { error = cvError });
             var language = request.Language ?? "auto";
             if (!Languages.Contains(language))
                 return Results.BadRequest(new { error = "Språket måste vara auto, sv eller en." });
 
-            var run = new Run { Kind = RunKind.Letter, Title = "Ny ansökan", Language = language };
+            var run = new Run { Kind = RunKind.Letter, Title = "Ny ansökan", Language = language, CvId = request.CvId };
             try
             {
                 var url = Clean(request.AdUrl, 1000);
@@ -83,8 +83,8 @@ public static class RunEndpoints
         api.MapPost("/interviews", async (CreateInterviewRequest request, JobbAgentDbContext db, RunQueue queue,
             IJobBoard board, AdReader reader, CancellationToken ct) =>
         {
-            if (!await db.Profiles.AnyAsync(ct))
-                return Results.BadRequest(new { error = "Lägg in ditt CV först." });
+            if (await Cvs.CheckAsync(db, request.CvId, ct) is { } cvError)
+                return Results.BadRequest(new { error = cvError });
 
             var application = request.ApplicationId is { } appId ? await db.Applications.FirstOrDefaultAsync(a => a.Id == appId, ct) : null;
             if (request.ApplicationId is not null && application is null)
@@ -95,7 +95,7 @@ public static class RunEndpoints
                 return Results.BadRequest(new { error = "Brevet finns inte." });
             application ??= letter is null ? null : await db.Applications.FirstOrDefaultAsync(a => a.LetterRunId == letter.Id, ct);
 
-            var run = new Run { Kind = RunKind.Interview, SourceRunId = letter?.Id, ApplicationId = application?.Id };
+            var run = new Run { Kind = RunKind.Interview, SourceRunId = letter?.Id, ApplicationId = application?.Id, CvId = request.CvId ?? letter?.CvId };
             if (letter is { Status: RunStatus.Completed })
             {
                 // Kraven och matchningen från brevet återanvänds, så att bara Intervjucoachen behöver jobba.
@@ -182,7 +182,7 @@ public static class RunEndpoints
         {
             var run = await db.Runs.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id && r.Kind == RunKind.Letter, ct);
             if (run?.Letter is null) return Results.NotFound();
-            var profile = await db.Profiles.AsNoTracking().FirstOrDefaultAsync(ct);
+            var profile = await Cvs.ResolveAsync(db, run.CvId, ct);
             var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Watches.Zone(config)).Date;
             var letter = LetterContent.From(run, profile, today);
             return format == "pdf"

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, type Application, type NewApplication, type NewLetter, type NewSearch, type RunSummary, type Watch } from './api'
+import { api, type Application, type Cv, type NewApplication, type NewLetter, type NewSearch, type RunSummary, type Watch } from './api'
 import ApplicationEditor from './components/ApplicationEditor'
 import Board from './components/Board'
 import CvPanel from './components/CvPanel'
@@ -15,7 +15,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'search', label: '🔎 Hitta jobb' },
   { id: 'letter', label: '✉️ Egen annons' },
   { id: 'board', label: '📋 Mina ansökningar' },
-  { id: 'cv', label: '📄 Mitt CV' },
+  { id: 'cv', label: '📄 Mina CV' },
 ]
 
 export default function App() {
@@ -27,6 +27,12 @@ export default function App() {
   const [applications, setApplications] = useState<Application[]>([])
   const [adding, setAdding] = useState(false)
   const [watches, setWatches] = useState<Watch[]>([])
+  const [cvs, setCvs] = useState<Cv[]>([])
+  const loadCvs = useCallback(async () => {
+    const list = await api.listCvs()
+    setCvs(list)
+    setStatus(s => ({ ...s, hasCv: list.length > 0 }))
+  }, [])
 
   const refresh = useCallback(() => {
     api.listRuns().then(setRuns, e => setError((e as Error).message))
@@ -42,11 +48,12 @@ export default function App() {
   useEffect(() => {
     refresh()
     api.listApplications().then(setApplications, () => {})
+    api.listCvs().then(setCvs, () => {})
     api.status().then(s => {
       setStatus(s)
       if (!s.hasCv) setTab('cv')
     }, () => {})
-  }, [refresh])
+  }, [refresh, loadCvs])
 
   function open(run: RunSummary) {
     setRuns(r => [run, ...r.filter(x => x.id !== run.id)])
@@ -142,19 +149,19 @@ export default function App() {
         <div>
           {current ? (
             <RunView key={current.id} run={current} onFinished={refresh} onDelete={() => remove(current.id)} onCreateLetter={createLetter}
-              applications={applications} onSaveJob={saveJob} onPrepareInterview={prepareInterview} />
+              applications={applications} onSaveJob={saveJob} onPrepareInterview={prepareInterview} cvs={cvs} />
           ) : tab === 'search' ? (
             <>
-              <SearchForm onSearch={search} disabled={!canRun} />
+              <SearchForm cvs={cvs} onSearch={search} disabled={!canRun} />
               <WatchList watches={watches} onOpen={select} onRun={runWatch} onToggle={toggleWatch} onDelete={deleteWatch} />
             </>
           ) : tab === 'letter' ? (
-            <LetterForm onCreate={createLetter} disabled={!canRun} />
+            <LetterForm cvs={cvs} onCreate={createLetter} disabled={!canRun} />
           ) : tab === 'board' ? (
             <Board applications={applications} onUpdate={updateJob} onDelete={deleteJob} onAdd={() => setAdding(true)} onOpenLetter={select}
               onPrepareInterview={a => prepareInterview(a.letterRunId ? { letterRunId: a.letterRunId } : { applicationId: a.id })} />
           ) : (
-            <CvPanel onSaved={() => setStatus(s => ({ ...s, hasCv: true }))} />
+            <CvPanel cvs={cvs} onChange={loadCvs} />
           )}
         </div>
       </main>

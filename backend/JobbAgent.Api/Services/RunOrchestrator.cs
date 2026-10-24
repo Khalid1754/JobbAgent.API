@@ -29,7 +29,7 @@ public class RunOrchestrator(
         var current = run.Kind == RunKind.Search ? Searcher.Name : Interpreter.Name;
         try
         {
-            var cv = (await db.Profiles.FindAsync([1], ct))?.CvText;
+            var cv = (await Cvs.ResolveAsync(db, run.CvId, ct))?.CvText;
             if (string.IsNullOrWhiteSpace(cv))
                 throw new AgentException("Lägg in ditt CV först.");
 
