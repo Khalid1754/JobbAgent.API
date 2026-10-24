@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Services;
 
@@ -34,7 +35,7 @@ public static class LlmExtensions
         }
         catch (JsonException)
         {
-            throw new LlmException("AI-svaret kunde inte tolkas.");
+            throw new LlmException(L("AI-svaret kunde inte tolkas.", "The AI response could not be understood."));
         }
     }
 
@@ -76,7 +77,7 @@ public class GroqLlm(IConfiguration config, HttpClient http) : ILlm
     public async Task<string> CompleteAsync(string system, string prompt, JsonObject? schema, CancellationToken ct)
     {
         if (!Enabled)
-            throw new LlmException("GROQ_API_KEY saknas. Lägg in den i .env och starta om.");
+            throw new LlmException(L("GROQ_API_KEY saknas. Lägg in den i .env och starta om.", "GROQ_API_KEY is missing. Add it to .env and restart."));
 
         var baseUrl = (config["Groq:BaseUrl"] ?? "https://api.groq.com").TrimEnd('/');
         var body = new JsonObject
@@ -129,7 +130,7 @@ public class GroqLlm(IConfiguration config, HttpClient http) : ILlm
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
-            throw new LlmException("Kunde inte nå Groq. Kontrollera internetanslutningen och försök igen.");
+            throw new LlmException(L("Kunde inte nå Groq. Kontrollera internetanslutningen och försök igen.", "Could not reach Groq. Check your internet connection and try again."));
         }
     }
 
@@ -139,16 +140,16 @@ public class GroqLlm(IConfiguration config, HttpClient http) : ILlm
         {
             throw new LlmException(response.StatusCode switch
             {
-                HttpStatusCode.TooManyRequests => "Groq: gratiskvoten är slut för stunden, försök igen om en minut.",
-                HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => "Ogiltig GROQ_API_KEY.",
-                _ => $"Groq-fel ({(int)response.StatusCode}): {ErrorMessage(text)}",
+                HttpStatusCode.TooManyRequests => L("Groq: gratiskvoten är slut för stunden, försök igen om en minut.", "Groq: the free quota is used up for now, try again in a minute."),
+                HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => L("Ogiltig GROQ_API_KEY.", "Invalid GROQ_API_KEY."),
+                _ => L($"Groq-fel ({(int)response.StatusCode}): {ErrorMessage(text)}", $"Groq error ({(int)response.StatusCode}): {ErrorMessage(text)}"),
             });
         }
 
         var choice = JsonNode.Parse(text)?["choices"]?[0];
         var content = choice?["message"]?["content"]?.GetValue<string>() ?? "";
         if (content.Length == 0)
-            throw new LlmException($"Groq gav inget svar (finish_reason: {choice?["finish_reason"]?.GetValue<string>() ?? "okänd"}).");
+            throw new LlmException(L($"Groq gav inget svar (finish_reason: {choice?["finish_reason"]?.GetValue<string>() ?? "okänd"}).", $"Groq gave no answer (finish_reason: {choice?["finish_reason"]?.GetValue<string>() ?? "unknown"})."));
         return content;
     }
 

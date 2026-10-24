@@ -50,10 +50,16 @@ var app = builder.Build();
 
 await DatabaseStartup.MigrateAsync(app.Services, app.Logger);
 
+// Språket först, så att även felmeddelandena blir på rätt språk.
+app.Use((context, next) =>
+{
+    Language.Current = Language.Parse(context.Request.Headers.AcceptLanguage);
+    return next(context);
+});
 app.UseExceptionHandler(handler => handler.Run(async context =>
 {
     context.Response.StatusCode = 500;
-    await context.Response.WriteAsJsonAsync(new { error = "Något gick fel på servern." });
+    await context.Response.WriteAsJsonAsync(new { error = Language.L("Något gick fel på servern.", "Something went wrong on the server.") });
 }));
 app.UseDefaultFiles();
 app.UseStaticFiles();

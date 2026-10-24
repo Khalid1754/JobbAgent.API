@@ -13,12 +13,13 @@ public class Reviewer(ILlm llm)
         - it claims experience, employers, education, tools or results that are not in the CV
         - it misses the job's most important requirements that the CV does support
         - it is in the wrong language, has placeholders like [Namn], or is far from 250–400 words
-        Otherwise approve it. Write feedback in Swedish as a short list of concrete fixes.
+        Otherwise approve it. Write feedback as a short list of concrete fixes, in the language the user asks for.
         """;
 
     public Task<Review> ReviewAsync(string cv, AdRequirements requirements, string language, string letter, CancellationToken ct) =>
         llm.CompleteJsonAsync<Review>(System, $"""
-            Required language: {Writer.LanguageName(language)}
+            Required language of the letter: {Writer.LanguageName(language)}
+            Write your feedback in {Language.AgentLanguage}.
 
             CV:
             {Text.Truncate(cv, 8000)}

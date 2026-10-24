@@ -5,6 +5,7 @@ using JobbAgent.Api.Data;
 using JobbAgent.Api.Models;
 using JobbAgent.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Endpoints;
 
@@ -42,9 +43,9 @@ public static class RunEndpoints
                 return Results.BadRequest(new { error = cvError });
             var language = request.Language ?? "auto";
             if (!Languages.Contains(language))
-                return Results.BadRequest(new { error = "Språket måste vara auto, sv eller en." });
+                return Results.BadRequest(new { error = L("Språket måste vara auto, sv eller en.", "The language must be auto, sv or en.") });
 
-            var run = new Run { Kind = RunKind.Letter, Title = "Ny ansökan", Language = language, CvId = request.CvId };
+            var run = new Run { Kind = RunKind.Letter, Title = L("Ny ansökan", "New application"), Language = language, CvId = request.CvId };
             try
             {
                 var url = Clean(request.AdUrl, 1000);
@@ -74,7 +75,7 @@ public static class RunEndpoints
             }
 
             if (run.AdText.Length < MinAdLength)
-                return Results.BadRequest(new { error = $"Annonsen är för kort (minst {MinAdLength} tecken). Klistra in hela annonstexten." });
+                return Results.BadRequest(new { error = L($"Annonsen är för kort (minst {MinAdLength} tecken). Klistra in hela annonstexten.", $"The ad is too short (at least {MinAdLength} characters). Paste the whole ad text.") });
             if (run.AdText.Length > MaxAdLength)
                 run.AdText = run.AdText[..MaxAdLength];
             return await EnqueueAsync(db, queue, run, ct);
@@ -88,11 +89,11 @@ public static class RunEndpoints
 
             var application = request.ApplicationId is { } appId ? await db.Applications.FirstOrDefaultAsync(a => a.Id == appId, ct) : null;
             if (request.ApplicationId is not null && application is null)
-                return Results.BadRequest(new { error = "Jobbet finns inte på tavlan." });
+                return Results.BadRequest(new { error = L("Jobbet finns inte på tavlan.", "The job is not on the board.") });
             var letterId = request.LetterRunId ?? application?.LetterRunId;
             var letter = letterId is { } id ? await db.Runs.FirstOrDefaultAsync(r => r.Id == id && r.Kind == RunKind.Letter, ct) : null;
             if (request.LetterRunId is not null && letter is null)
-                return Results.BadRequest(new { error = "Brevet finns inte." });
+                return Results.BadRequest(new { error = L("Brevet finns inte.", "The letter does not exist.") });
             application ??= letter is null ? null : await db.Applications.FirstOrDefaultAsync(a => a.LetterRunId == letter.Id, ct);
 
             var run = new Run { Kind = RunKind.Interview, SourceRunId = letter?.Id, ApplicationId = application?.Id, CvId = request.CvId ?? letter?.CvId };
@@ -130,7 +131,7 @@ public static class RunEndpoints
                     }
                     else
                     {
-                        return Results.BadRequest(new { error = "Lägg in en länk till annonsen på jobbet först, så att agenterna kan läsa den." });
+                        return Results.BadRequest(new { error = L("Lägg in en länk till annonsen på jobbet först, så att agenterna kan läsa den.", "Add a link to the ad on the job first, so the agents can read it.") });
                     }
                 }
                 catch (DocumentException e)
@@ -140,10 +141,10 @@ public static class RunEndpoints
             }
             else
             {
-                return Results.BadRequest(new { error = "Välj ett brev eller ett jobb på tavlan." });
+                return Results.BadRequest(new { error = L("Välj ett brev eller ett jobb på tavlan.", "Choose a letter or a job on the board.") });
             }
             if (run.AdText is { Length: > MaxAdLength }) run.AdText = run.AdText[..MaxAdLength];
-            run.Title = Text.Truncate($"Intervju: {run.Title}", 300);
+            run.Title = Text.Truncate(L($"Intervju: {run.Title}", $"Interview: {run.Title}"), 300);
             return await EnqueueAsync(db, queue, run, ct);
         });
 
@@ -167,10 +168,10 @@ public static class RunEndpoints
             var run = await db.Runs.FirstOrDefaultAsync(r => r.Id == id, ct);
             if (run is null) return Results.NotFound();
             if (run.Kind != RunKind.Letter || run.Status != RunStatus.Completed)
-                return Results.Conflict(new { error = "Brevet kan ändras först när agenterna är klara." });
+                return Results.Conflict(new { error = L("Brevet kan ändras först när agenterna är klara.", "The letter can be changed once the agents are done.") });
             var letter = (request.Letter ?? "").Replace("\r", "").Trim();
             if (letter.Length is 0 or > MaxLetterLength)
-                return Results.BadRequest(new { error = $"Brevet måste vara 1–{MaxLetterLength} tecken." });
+                return Results.BadRequest(new { error = L($"Brevet måste vara 1–{MaxLetterLength} tecken.", $"The letter must be 1–{MaxLetterLength} characters.") });
             run.Letter = letter;
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
@@ -195,7 +196,7 @@ public static class RunEndpoints
             var run = await db.Runs.FirstOrDefaultAsync(r => r.Id == id, ct);
             if (run is null) return Results.NotFound();
             if (run.Status == RunStatus.Running)
-                return Results.Conflict(new { error = "Agenterna jobbar fortfarande, vänta tills de är klara." });
+                return Results.Conflict(new { error = L("Agenterna jobbar fortfarande, vänta tills de är klara.", "The agents are still working, wait until they are done.") });
             // Jobbet ligger kvar på tavlan även om brevet tas bort.
             await db.Applications.Where(a => a.LetterRunId == id).ForEachAsync(a => a.LetterRunId = null, ct);
             db.Runs.Remove(run);
@@ -210,6 +211,7 @@ public static class RunEndpoints
 
     internal static async Task<IResult> EnqueueAsync(JobbAgentDbContext db, RunQueue queue, Run run, CancellationToken ct)
     {
+        run.UiLanguage = Language.Current.Code();
         db.Runs.Add(run);
         await db.SaveChangesAsync(ct);
         queue.Enqueue(run.Id);
@@ -221,11 +223,11 @@ public static class RunEndpoints
         try
         {
             return await board.GetAsync(id, ct)
-                ?? throw new DocumentException("Annonsen finns inte längre i Platsbanken.");
+                ?? throw new DocumentException(L("Annonsen finns inte längre i Platsbanken.", "The ad is no longer in Platsbanken."));
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or JsonException && !ct.IsCancellationRequested)
         {
-            throw new DocumentException("Kunde inte hämta annonsen från Platsbanken. Försök igen eller klistra in texten.");
+            throw new DocumentException(L("Kunde inte hämta annonsen från Platsbanken. Försök igen eller klistra in texten.", "Could not fetch the ad from Platsbanken. Try again or paste the text."));
         }
     }
 

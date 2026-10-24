@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, type Application, type NewApplication, type Run, type Stage } from '../api'
 import { STAGES } from '../board'
+import { useLang } from '../i18n'
 import Score from './Score'
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function LetterView({ run, application, onSaveJob, onPrepareInterview }: Props) {
+  const { t } = useLang()
   const [letter, setLetter] = useState(run.letter ?? '')
   const [saved, setSaved] = useState(run.letter ?? '')
   const [message, setMessage] = useState<string | null>(null)
@@ -20,7 +22,7 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
     try {
       await api.saveLetter(run.id, letter)
       setSaved(letter)
-      flash('Sparat!')
+      flash(t('Sparat!'))
     } catch (err) {
       flash((err as Error).message)
     }
@@ -28,14 +30,14 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
 
   async function copy() {
     await navigator.clipboard.writeText(letter)
-    flash('Kopierat!')
+    flash(t('Kopierat!'))
   }
 
   // Word och PDF skapas av servern från det sparade brevet, så ändringar sparas först.
   async function download(format: 'docx' | 'pdf' | 'txt') {
     if (format === 'txt') {
       const url = URL.createObjectURL(new Blob([letter], { type: 'text/plain;charset=utf-8' }))
-      const name = `Personligt brev - ${run.company ?? run.title}.txt`.replace(/[\\/:*?"<>|]/g, '')
+      const name = `${run.language === 'en' ? 'Cover letter' : 'Personligt brev'} - ${run.company ?? run.title}.txt`.replace(/[\\/:*?"<>|]/g, '')
       Object.assign(document.createElement('a'), { href: url, download: name }).click()
       URL.revokeObjectURL(url)
       return
@@ -54,7 +56,7 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
   async function track(stage: Stage) {
     try {
       await onSaveJob({ letterRunId: run.id, stage })
-      flash(stage === 'applied' ? 'Markerat som sökt på tavlan!' : 'Sparat på tavlan!')
+      flash(stage === 'applied' ? t('Markerat som sökt på tavlan!') : t('Sparat på tavlan!'))
     } catch (err) {
       flash((err as Error).message)
     }
@@ -74,12 +76,12 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
             <p>{match.summary}</p>
             <div className="columns">
               <div>
-                <h3>Det här passar</h3>
+                <h3>{t('Det här passar')}</h3>
                 <ul>{match.matches.map(m => <li key={m.requirement}><b>{m.requirement}:</b> {m.evidence}</li>)}</ul>
               </div>
               {match.gaps.length > 0 && (
                 <div>
-                  <h3>Det här saknas</h3>
+                  <h3>{t('Det här saknas')}</h3>
                   <ul>{match.gaps.map(g => <li key={g}>{g}</li>)}</ul>
                 </div>
               )}
@@ -90,16 +92,16 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
 
       {match?.cvTips && match.cvTips.length > 0 && (
         <div className="card">
-          <h3>Anpassa ditt CV för jobbet</h3>
-          <p className="muted">Matcharens förslag bygger bara på det som redan står i ditt CV.</p>
+          <h3>{t('Anpassa ditt CV för jobbet')}</h3>
+          <p className="muted">{t('Matcharens förslag bygger bara på det som redan står i ditt CV.')}</p>
           <ul className="tips">
-            {match.cvTips.map(t => (
-              <li key={t.section + t.suggestion}>
-                <span className="chip-label">{t.section}</span> {t.suggestion}
-                {t.example && (
+            {match.cvTips.map(tip => (
+              <li key={tip.section + tip.suggestion}>
+                <span className="chip-label">{tip.section}</span> {tip.suggestion}
+                {tip.example && (
                   <div className="example">
-                    <q>{t.example}</q>
-                    <button className="secondary small" onClick={() => navigator.clipboard.writeText(t.example).then(() => flash('Kopierat!'))}>Kopiera</button>
+                    <q>{tip.example}</q>
+                    <button className="secondary small" onClick={() => navigator.clipboard.writeText(tip.example).then(() => flash(t('Kopierat!')))}>{t('Kopiera')}</button>
                   </div>
                 )}
               </li>
@@ -110,33 +112,33 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
 
       <div className="card">
         <div className="actions">
-          <h3>Personligt brev</h3>
+          <h3>{t('Personligt brev')}</h3>
           {message && <span className="ok">{message}</span>}
-          <button className="secondary" disabled={letter === saved || letter.trim().length === 0} onClick={save}>Spara ändringar</button>
-          <button className="secondary" onClick={copy}>Kopiera</button>
-          <button className="secondary" onClick={() => download('docx')} title="Med namn och kontaktuppgifter överst">Word</button>
-          <button className="secondary" onClick={() => download('pdf')} title="Med namn och kontaktuppgifter överst">PDF</button>
-          <button className="secondary" onClick={() => download('txt')}>Text</button>
+          <button className="secondary" disabled={letter === saved || letter.trim().length === 0} onClick={save}>{t('Spara ändringar')}</button>
+          <button className="secondary" onClick={copy}>{t('Kopiera')}</button>
+          <button className="secondary" onClick={() => download('docx')} title={t('Med namn och kontaktuppgifter överst')}>Word</button>
+          <button className="secondary" onClick={() => download('pdf')} title={t('Med namn och kontaktuppgifter överst')}>PDF</button>
+          <button className="secondary" onClick={() => download('txt')}>{t('Text')}</button>
         </div>
         <textarea className="letter" rows={22} value={letter} onChange={e => setLetter(e.target.value)} />
-        <p className="meta">Läs alltid igenom brevet och gör det till ditt eget innan du skickar det.</p>
+        <p className="meta">{t('Läs alltid igenom brevet och gör det till ditt eget innan du skickar det.')}</p>
         <div className="actions start">
           {application ? (
-            <span className="muted">På ansökningstavlan: {STAGES.find(s => s.id === application.stage)?.icon} {STAGES.find(s => s.id === application.stage)?.label}</span>
+            <span className="muted">{t('På ansökningstavlan:')} {STAGES.find(s => s.id === application.stage)?.icon} {t(STAGES.find(s => s.id === application.stage)?.label ?? '')}</span>
           ) : (
             <>
-              <button onClick={() => track('applied')}>📨 Jag har sökt jobbet</button>
-              <button className="secondary" onClick={() => track('saved')}>⭐ Spara på tavlan</button>
+              <button onClick={() => track('applied')}>📨 {t('Jag har sökt jobbet')}</button>
+              <button className="secondary" onClick={() => track('saved')}>⭐ {t('Spara på tavlan')}</button>
             </>
           )}
-          <button className="secondary" onClick={() => onPrepareInterview().catch(err => flash((err as Error).message))}>🗣️ Förbered intervju</button>
+          <button className="secondary" onClick={() => onPrepareInterview().catch(err => flash((err as Error).message))}>🗣️ {t('Förbered intervju')}</button>
         </div>
       </div>
 
       {run.adText && (
         <div className="card">
           <details>
-            <summary><b>Annonsen</b>{run.adUrl && <> · <a href={run.adUrl} target="_blank" rel="noreferrer">öppna originalet</a></>}</summary>
+            <summary><b>{t('Annonsen')}</b>{run.adUrl && <> · <a href={run.adUrl} target="_blank" rel="noreferrer">{t('öppna originalet')}</a></>}</summary>
             <p className="ad">{run.adText}</p>
           </details>
         </div>

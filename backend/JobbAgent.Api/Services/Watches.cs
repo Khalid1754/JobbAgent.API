@@ -3,6 +3,7 @@ using JobbAgent.Api.Agents;
 using JobbAgent.Api.Data;
 using JobbAgent.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Services;
 
@@ -12,12 +13,12 @@ public static class Watches
     public const int MaxSeen = 1000;
 
     public static string Title(string? keywords, string? location, bool remoteOnly) =>
-        Text.Truncate((keywords ?? "Jobb som passar mitt CV") + (location is null ? "" : $" i {location}") + (remoteOnly ? " (distans)" : ""), 300);
+        Text.Truncate((keywords ?? L("Jobb som passar mitt CV", "Jobs that fit my CV")) + (location is null ? "" : L($" i {location}", $" in {location}")) + (remoteOnly ? L(" (distans)", " (remote)") : ""), 300);
 
     public static Run CreateRun(Watch w) => new()
     {
-        Kind = RunKind.Search, WatchId = w.Id, Title = Text.Truncate("Bevakning: " + Title(w.Keywords, w.Location, w.RemoteOnly), 300),
-        Location = w.Location, Keywords = w.Keywords, RemoteOnly = w.RemoteOnly, CvId = w.CvId,
+        Kind = RunKind.Search, WatchId = w.Id, Title = Text.Truncate(L("Bevakning: ", "Saved search: ") + Title(w.Keywords, w.Location, w.RemoteOnly), 300),
+        Location = w.Location, Keywords = w.Keywords, RemoteOnly = w.RemoteOnly, CvId = w.CvId, UiLanguage = w.UiLanguage,
     };
 
     // Markerar annonser som bevakningen inte visat förut och räknar hur många av dem som matchar bra.
@@ -80,7 +81,12 @@ public class WatchScheduler(IServiceScopeFactory scopes, RunQueue queue, ILlm ll
         var zone = Watches.Zone(config);
         var hour = config.GetValue("Watch:Hour", 7);
         var due = (await db.Watches.Where(w => w.Enabled).ToListAsync(ct)).Where(w => Watches.IsDue(w, utcNow, zone, hour)).ToList();
-        var runs = due.Select(Watches.CreateRun).ToList();
+        // Varje bevakning körs på det språk du hade när du skapade den.
+        var runs = due.Select(w =>
+        {
+            Language.Current = Language.Parse(w.UiLanguage);
+            return Watches.CreateRun(w);
+        }).ToList();
         db.Runs.AddRange(runs);
         due.ForEach(w => w.LastRunAt = utcNow);
         await db.SaveChangesAsync(ct);

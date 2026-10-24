@@ -1,4 +1,5 @@
 using JobbAgent.Api.Services;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Agents;
 
@@ -25,7 +26,7 @@ public class Interpreter(ILlm llm)
 
         {r.Summary}
 
-        {List("Krav", r.MustHave)}{List("Meriterande", r.NiceToHave)}{List("Arbetsuppgifter", r.Responsibilities)}{List("Personliga egenskaper", r.Traits)}
+        {List(L("Krav", "Requirements"), r.MustHave)}{List(L("Meriterande", "Merits"), r.NiceToHave)}{List(L("Arbetsuppgifter", "Responsibilities"), r.Responsibilities)}{List(L("Personliga egenskaper", "Personal qualities"), r.Traits)}
         """.Trim();
 
     private static string List(string heading, string[] items) =>

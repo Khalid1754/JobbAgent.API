@@ -1,4 +1,5 @@
 using JobbAgent.Api.Services;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Agents;
 
@@ -11,7 +12,7 @@ public class Matcher(ILlm llm)
         You are Matchare in a team of AI agents that help a job seeker. Score how well the CV fits
         each job ad from 0 to 100 (70+ = strong fit, 40–69 = possible, below 40 = poor fit). Be
         honest: required experience or education the CV lacks lowers the score. Score every ad.
-        Write each reason as one short sentence in Swedish.
+        Write each reason as one short sentence in the language the user asks for.
         """;
 
     private const string MatchSystem = """
@@ -21,7 +22,7 @@ public class Matcher(ILlm llm)
         the fit 0–100 and list what a cover letter should highlight, most important first.
         Also suggest 3–5 concrete ways to tailor the CV for this job: what to move up, rephrase with
         the ad's own words, or make more visible. Only rearrange and rephrase what the CV already
-        says; never suggest adding experience the person does not have. Write in Swedish.
+        says; never suggest adding experience the person does not have. Write in the language the user asks for.
         """;
 
     public const int DescriptionLength = 700;
@@ -30,10 +31,12 @@ public class Matcher(ILlm llm)
     {
         if (ads.Count == 0) return [];
         var list = string.Join("\n\n", ads.Select((ad, i) => $"""
-            [{i + 1}] {ad.Title} · {ad.Employer ?? "okänd arbetsgivare"} · {ad.Municipality ?? "okänd ort"}
+            [{i + 1}] {ad.Title} · {ad.Employer ?? L("okänd arbetsgivare", "unknown employer")} · {ad.Municipality ?? L("okänd ort", "unknown location")}
             {Text.Truncate(Text.Tidy(ad.Description), DescriptionLength)}
             """));
         var ranking = await llm.CompleteJsonAsync<Ranking>(RankSystem, $"""
+            Write the reasons in {Language.AgentLanguage}.
+
             CV:
             {Text.Truncate(cv, 6000)}
 
@@ -48,7 +51,7 @@ public class Matcher(ILlm llm)
             {
                 var r = scores.GetValueOrDefault(i + 1);
                 return new SearchHit(ad.Id, ad.Title, ad.Employer, ad.Municipality, ad.Url, ad.Deadline,
-                    Math.Clamp(r?.Score ?? 0, 0, 100), r?.Reason ?? "Ingen bedömning.");
+                    Math.Clamp(r?.Score ?? 0, 0, 100), r?.Reason ?? L("Ingen bedömning.", "No assessment."));
             })
             .OrderByDescending(h => h.Score)
             .ToList();
@@ -57,6 +60,8 @@ public class Matcher(ILlm llm)
     public async Task<MatchResult> MatchAsync(string cv, AdRequirements requirements, CancellationToken ct)
     {
         var match = await llm.CompleteJsonAsync<MatchResult>(MatchSystem, $"""
+            Write the summary, evidence, gaps, highlights and CV tips in {Language.AgentLanguage}.
+
             CV:
             {Text.Truncate(cv, 8000)}
 
@@ -68,17 +73,17 @@ public class Matcher(ILlm llm)
 
     // CV-tipsen visas för användaren men behövs inte av Skribenten och Intervjucoachen.
     public static string Format(MatchResult m, bool withCvTips = true) => $"""
-        **Matchning: {m.Score} %**
+        **{L("Matchning", "Match")}: {m.Score} %**
 
         {m.Summary}
 
-        {(m.Matches.Length > 0 ? "**Det här passar**\n" + string.Join("\n", m.Matches.Select(x => $"- {x.Requirement}: {x.Evidence}")) + "\n\n" : "")}{(m.Gaps.Length > 0 ? "**Det här saknas**\n" + string.Join("\n", m.Gaps.Select(g => $"- {g}")) + "\n\n" : "")}{(m.Highlights.Length > 0 ? "**Lyft fram i brevet**\n" + string.Join("\n", m.Highlights.Select(h => $"- {h}")) + "\n\n" : "")}{(withCvTips ? FormatTips(m.CvTips ?? []) : "")}
+        {(m.Matches.Length > 0 ? L("**Det här passar**\n", "**What fits**\n") + string.Join("\n", m.Matches.Select(x => $"- {x.Requirement}: {x.Evidence}")) + "\n\n" : "")}{(m.Gaps.Length > 0 ? L("**Det här saknas**\n", "**What is missing**\n") + string.Join("\n", m.Gaps.Select(g => $"- {g}")) + "\n\n" : "")}{(m.Highlights.Length > 0 ? L("**Lyft fram i brevet**\n", "**Highlight in the letter**\n") + string.Join("\n", m.Highlights.Select(h => $"- {h}")) + "\n\n" : "")}{(withCvTips ? FormatTips(m.CvTips ?? []) : "")}
         """.Trim();
 
     private static string FormatTips(CvTip[] tips) => tips.Length == 0 ? "" :
-        "**Anpassa CV:t**\n" + string.Join("\n", tips.Select(t => $"- {t.Section}: {t.Suggestion}" + (t.Example.Length > 0 ? $" (\"{t.Example}\")" : "")));
+        L("**Anpassa CV:t**\n", "**Tailor the CV**\n") + string.Join("\n", tips.Select(t => $"- {t.Section}: {t.Suggestion}" + (t.Example.Length > 0 ? $" (\"{t.Example}\")" : "")));
 
     public static string FormatHits(IReadOnlyList<SearchHit> hits) => hits.Count == 0
-        ? "Inga annonser hittades."
-        : string.Join("\n", hits.Select((h, i) => $"{i + 1}. **{h.Score} %** [{h.Title}]({h.Url}) · {h.Employer ?? "okänd"}: {h.Reason}"));
+        ? L("Inga annonser hittades.", "No ads found.")
+        : string.Join("\n", hits.Select((h, i) => $"{i + 1}. **{h.Score} %** [{h.Title}]({h.Url}) · {h.Employer ?? L("okänd", "unknown")}: {h.Reason}"));
 }

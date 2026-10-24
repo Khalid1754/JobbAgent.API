@@ -273,6 +273,13 @@ namespace JobbAgent.Api.Data.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<string>("UiLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("sv");
+
                     b.Property<Guid?>("WatchId")
                         .HasColumnType("uniqueidentifier");
 
@@ -324,6 +331,13 @@ namespace JobbAgent.Api.Data.Migrations
                     b.Property<string>("SeenAdIdsJson")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UiLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("sv");
 
                     b.HasKey("Id");
 

@@ -2,6 +2,7 @@ using JobbAgent.Api.Data;
 using JobbAgent.Api.Models;
 using JobbAgent.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Endpoints;
 
@@ -23,7 +24,7 @@ public static class CvEndpoints
         cvs.MapPost("/", async (SaveCvRequest request, JobbAgentDbContext db, CancellationToken ct) =>
         {
             if (await db.Profiles.CountAsync(ct) >= MaxCvs)
-                return Results.BadRequest(new { error = $"Du kan ha högst {MaxCvs} CV." });
+                return Results.BadRequest(new { error = L($"Du kan ha högst {MaxCvs} CV.", $"You can have at most {MaxCvs} CVs.") });
             var cv = new Profile
             {
                 Id = (await db.Profiles.MaxAsync(p => (int?)p.Id, ct) ?? 0) + 1,
@@ -45,7 +46,7 @@ public static class CvEndpoints
         cvs.MapPost("/upload", async (IFormFile file, JobbAgentDbContext db, CancellationToken ct) =>
         {
             if (await db.Profiles.CountAsync(ct) >= MaxCvs)
-                return Results.BadRequest(new { error = $"Du kan ha högst {MaxCvs} CV." });
+                return Results.BadRequest(new { error = L($"Du kan ha högst {MaxCvs} CV.", $"You can have at most {MaxCvs} CVs.") });
             var cv = new Profile
             {
                 Id = (await db.Profiles.MaxAsync(p => (int?)p.Id, ct) ?? 0) + 1,
@@ -69,7 +70,7 @@ public static class CvEndpoints
             var all = await db.Profiles.ToListAsync(ct);
             var cv = all.FirstOrDefault(p => p.Id == id);
             if (cv is null) return Results.NotFound();
-            if (all.Count == 1) return Results.BadRequest(new { error = "Du måste ha minst ett CV." });
+            if (all.Count == 1) return Results.BadRequest(new { error = L("Du måste ha minst ett CV.", "You must have at least one CV.") });
             db.Profiles.Remove(cv);
             if (cv.IsDefault) all.First(p => p.Id != id).IsDefault = true;
             // Bevakningar som använde CV:t går över till standard-CV:t.
@@ -82,7 +83,7 @@ public static class CvEndpoints
     private static async Task<IResult> UploadAsync(JobbAgentDbContext db, Profile cv, IFormFile file, bool isNew, CancellationToken ct)
     {
         if (file.Length > MaxFileSize)
-            return Results.BadRequest(new { error = "Filen är för stor (max 5 MB)." });
+            return Results.BadRequest(new { error = L("Filen är för stor (max 5 MB).", "The file is too large (max 5 MB).") });
         try
         {
             await using var stream = file.OpenReadStream();
@@ -98,9 +99,9 @@ public static class CvEndpoints
         bool isNew, CancellationToken ct)
     {
         if (text.Length < MinCvLength)
-            return Results.BadRequest(new { error = $"CV:t är för kort (minst {MinCvLength} tecken)." });
+            return Results.BadRequest(new { error = L($"CV:t är för kort (minst {MinCvLength} tecken).", $"The CV is too short (at least {MinCvLength} characters).") });
         if (text.Length > MaxCvLength)
-            return Results.BadRequest(new { error = $"CV:t är för långt (högst {MaxCvLength} tecken)." });
+            return Results.BadRequest(new { error = L($"CV:t är för långt (högst {MaxCvLength} tecken).", $"The CV is too long (at most {MaxCvLength} characters).") });
 
         // En ny fil ersätter texten; sparas texten för hand ligger filnamnet kvar om texten inte ändrats.
         if (fileName is not null || cv.CvText != text) cv.FileName = fileName;

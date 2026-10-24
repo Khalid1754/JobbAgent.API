@@ -10,7 +10,7 @@ using UglyToad.PdfPig.Writer;
 namespace JobbAgent.Api.Services;
 
 // Allt som står i det nedladdade brevet: brevhuvud med dina kontaktuppgifter, datum, mottagare och själva texten.
-public record LetterContent(string? Name, string ContactLine, string DateLine, string? Company, string Subject, string Body)
+public record LetterContent(string? Name, string ContactLine, string DateLine, string? Company, string Subject, string Body, bool English = false)
 {
     public static LetterContent From(Run run, Profile? profile, DateTime today)
     {
@@ -22,7 +22,8 @@ public record LetterContent(string? Name, string ContactLine, string DateLine, s
             string.IsNullOrWhiteSpace(profile?.City) ? date : $"{profile.City}, {date}",
             run.Company,
             (english ? "Application: " : "Ansökan: ") + run.Title,
-            run.Letter ?? "");
+            run.Letter ?? "",
+            english);
     }
 
     // Brevets stycken. Tomma rader skiljer stycken åt; enkla radbrytningar (t.ex. i hälsningen) behålls.
@@ -32,7 +33,7 @@ public record LetterContent(string? Name, string ContactLine, string DateLine, s
 
     public string FileName(string extension)
     {
-        var name = $"Personligt brev - {Company ?? Subject}";
+        var name = $"{(English ? "Cover letter" : "Personligt brev")} - {Company ?? Subject}";
         // Tecken som Windows inte tillåter i filnamn.
         foreach (var c in "\\/:*?\"<>|") name = name.Replace(c.ToString(), "");
         return $"{Text.Truncate(name, 80)}.{extension}";
@@ -59,9 +60,9 @@ public static class LetterDocument
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
             <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1418" w:right="1418" w:bottom="1418" w:left="1418" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>
             """;
-        const string styles = """
+        var styles = $"""
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-            <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Cambria" w:hAnsi="Cambria" w:cs="Cambria"/><w:sz w:val="22"/><w:lang w:val="sv-SE"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="288" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>
+            <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Cambria" w:hAnsi="Cambria" w:cs="Cambria"/><w:sz w:val="22"/><w:lang w:val="{(letter.English ? "en-GB" : "sv-SE")}"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="288" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>
             """;
         const string contentTypes = """
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>

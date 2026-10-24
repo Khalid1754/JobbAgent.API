@@ -1,6 +1,7 @@
 using JobbAgent.Api.Data;
 using JobbAgent.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Services;
 
@@ -13,7 +14,7 @@ public static class Cvs
 
     // Kontrollerar ett valt CV när en körning startas. Null = allt ok.
     public static async Task<string?> CheckAsync(JobbAgentDbContext db, int? cvId, CancellationToken ct) =>
-        !await db.Profiles.AnyAsync(ct) ? "Lägg in ditt CV först."
-        : cvId is { } id && !await db.Profiles.AnyAsync(p => p.Id == id, ct) ? "Det valda CV:t finns inte."
+        !await db.Profiles.AnyAsync(ct) ? L("Lägg in ditt CV först.", "Add your CV first.")
+        : cvId is { } id && !await db.Profiles.AnyAsync(p => p.Id == id, ct) ? L("Det valda CV:t finns inte.", "The selected CV does not exist.")
         : null;
 }

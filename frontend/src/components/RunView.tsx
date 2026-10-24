@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, type Application, type Cv, type NewApplication, type NewLetter, type Run, type RunSummary } from '../api'
+import { useLang } from '../i18n'
 import { useRunStream } from '../useRunStream'
 import InterviewView from './InterviewView'
 import LetterView from './LetterView'
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function RunView({ run, onFinished, onDelete, onCreateLetter, applications, onSaveJob, onPrepareInterview, cvs }: Props) {
+  const { t } = useLang()
   const [detail, setDetail] = useState<Run | null>(null)
   const load = useCallback(() => api.getRun(run.id).then(setDetail, () => {}), [run.id])
   useEffect(() => { load() }, [load])
@@ -37,8 +39,8 @@ export default function RunView({ run, onFinished, onDelete, onCreateLetter, app
     <section>
       <div className="card">
         <h2>{title}{company && <span className="muted"> · {company}</span>}</h2>
-        {cv && <p className="meta">Med CV:t {cv.name}</p>}
-        {state.status === 'queued' && <p className="muted">I kö, startar strax…</p>}
+        {cv && <p className="meta">{t('Med CV:t {name}', { name: cv.name })}</p>}
+        {state.status === 'queued' && <p className="muted">{t('I kö, startar strax…')}</p>}
         <Pipeline kind={run.kind} steps={state.steps} />
       </div>
 
@@ -56,14 +58,14 @@ export default function RunView({ run, onFinished, onDelete, onCreateLetter, app
       {state.steps.length > 0 && (
         <div className="card">
           <details>
-            <summary><b>Vad agenterna gjorde</b></summary>
+            <summary><b>{t('Vad agenterna gjorde')}</b></summary>
             <Timeline steps={state.steps} />
           </details>
         </div>
       )}
 
       {(state.status === 'completed' || state.status === 'failed') && (
-        <button className="danger" onClick={onDelete}>Ta bort</button>
+        <button className="danger" onClick={onDelete}>{t('Ta bort')}</button>
       )}
     </section>
   )

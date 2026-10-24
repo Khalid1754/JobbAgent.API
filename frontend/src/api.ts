@@ -1,3 +1,4 @@
+import { currentLang, t } from './i18n'
 export type RunStatus = 'queued' | 'running' | 'completed' | 'failed'
 export type RunKind = 'search' | 'letter' | 'interview'
 export type StepKind = 'started' | 'completed' | 'handoff' | 'failed'
@@ -188,11 +189,13 @@ export interface NewLetter {
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
-    headers: init?.body instanceof FormData ? init.headers : { 'Content-Type': 'application/json', ...init?.headers },
+    headers: init?.body instanceof FormData
+      ? { 'Accept-Language': currentLang(), ...init.headers }
+      : { 'Content-Type': 'application/json', 'Accept-Language': currentLang(), ...init?.headers },
   })
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    throw new Error(body?.error ?? `Servern svarade ${response.status}`)
+    throw new Error(body?.error ?? t('Servern svarade {status}', { status: response.status }))
   }
   return response.status === 204 ? (undefined as T) : response.json()
 }

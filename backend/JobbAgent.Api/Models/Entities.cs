@@ -49,6 +49,8 @@ public class Run
     public string? AdText { get; set; }
     public string? PlatsbankenId { get; set; }
     public string Language { get; set; } = "auto";
+    // Gränssnittets språk när körningen startades; agenternas steg och analyser skrivs på det.
+    public string UiLanguage { get; set; } = "sv";
 
     // Intervjuförberedelse: brevet den bygger på och jobbet på tavlan den gjordes för.
     public Guid? SourceRunId { get; set; }
@@ -111,6 +113,7 @@ public class Watch
     public Guid? LastRunId { get; set; }
     // Nya annonser över MinScore i senaste körningen som du inte har tittat på än.
     public int NewMatches { get; set; }
+    public string UiLanguage { get; set; } = "sv";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 

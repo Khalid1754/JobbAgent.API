@@ -35,6 +35,7 @@ public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : 
             e.Property(r => r.AdUrl).HasMaxLength(1000);
             e.Property(r => r.PlatsbankenId).HasMaxLength(50);
             e.Property(r => r.Language).HasMaxLength(10);
+            e.Property(r => r.UiLanguage).HasMaxLength(10).HasDefaultValue("sv");
             e.Property(r => r.Error).HasMaxLength(1000);
             e.HasIndex(r => r.CreatedAt);
             e.HasMany(r => r.Steps).WithOne().HasForeignKey(s => s.RunId).OnDelete(DeleteBehavior.Cascade);
@@ -55,6 +56,7 @@ public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : 
         {
             e.Property(w => w.Location).HasMaxLength(100);
             e.Property(w => w.Keywords).HasMaxLength(200);
+            e.Property(w => w.UiLanguage).HasMaxLength(10).HasDefaultValue("sv");
         });
         b.Entity<AgentStep>(e =>
         {

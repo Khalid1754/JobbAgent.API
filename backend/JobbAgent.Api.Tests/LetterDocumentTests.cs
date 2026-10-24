@@ -60,7 +60,7 @@ public class LetterDocumentTests
         var content = LetterContent.From(run, profile, new DateTime(2026, 10, 24));
 
         Assert.Equal(("Application: Developer", "Malmö, 24 October 2026", "k@example.se  ·  Malmö"), (content.Subject, content.DateLine, content.ContactLine));
-        Assert.Equal("Personligt brev - Acme Nordic.pdf", content.FileName("pdf"));
+        Assert.Equal("Cover letter - Acme Nordic.pdf", content.FileName("pdf"));
     }
 
     [Fact]

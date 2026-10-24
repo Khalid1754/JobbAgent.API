@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JobbAgent.Api.Services;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Agents;
 
@@ -26,13 +27,15 @@ public class Searcher(ILlm llm, IJobBoard board, IConfiguration config, ILogger<
             {Text.Truncate(cv, 6000)}
 
             Wishes: {(string.IsNullOrWhiteSpace(keywords) ? "none" : keywords)}
+
+            Write the summary in {Language.AgentLanguage}.
             """, ct);
 
         var queries = plan.Queries.Select(q => q.Trim()).Where(q => q.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Take(3)
             .Select(q => string.IsNullOrWhiteSpace(location) || q.Contains(location, StringComparison.OrdinalIgnoreCase) ? q : $"{q} {location.Trim()}")
             .ToList();
         if (queries.Count == 0)
-            throw new AgentException("Sökaren kunde inte ta fram några sökord ur CV:t. Lägg till egna sökord och försök igen.");
+            throw new AgentException(L("Sökaren kunde inte ta fram några sökord ur CV:t. Lägg till egna sökord och försök igen.", "The Searcher could not find any search terms in the CV. Add your own keywords and try again."));
 
         var perQuery = new List<IReadOnlyList<JobAd>>();
         var failures = 0;
@@ -49,7 +52,7 @@ public class Searcher(ILlm llm, IJobBoard board, IConfiguration config, ILogger<
             }
         }
         if (failures == queries.Count)
-            throw new AgentException("Kunde inte nå Platsbanken. Kontrollera internetanslutningen och försök igen.");
+            throw new AgentException(L("Kunde inte nå Platsbanken. Kontrollera internetanslutningen och försök igen.", "Could not reach Platsbanken. Check your internet connection and try again."));
 
         return new SearchResult(plan, queries, Interleave(perQuery, MaxAds));
     }

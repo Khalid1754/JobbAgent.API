@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import type { Application, NewApplication, NewLetter, SearchHit } from '../api'
+import { useLang } from '../i18n'
 import Score from './Score'
-
-const date = (iso: string) => new Date(iso).toLocaleDateString('sv-SE')
 
 interface Props {
   hits: SearchHit[]
@@ -13,6 +12,7 @@ interface Props {
 }
 
 export default function SearchResults({ hits, cvId, applications, onCreateLetter, onSaveJob }: Props) {
+  const { t, locale } = useLang()
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,30 +42,30 @@ export default function SearchResults({ hits, cvId, applications, onCreateLetter
   const saved = new Set(applications.map(a => a.platsbankenId))
 
   if (hits.length === 0)
-    return <div className="card">Inga annonser hittades. Prova en annan ort, egna sökord eller ta bort distansvalet.</div>
+    return <div className="card">{t('Inga annonser hittades. Prova en annan ort, egna sökord eller ta bort distansvalet.')}</div>
 
   return (
     <div className="card">
-      <h3>{hits.length} annonser, bäst matchning först{hits.some(h => h.isNew) && ` · ${hits.filter(h => h.isNew).length} nya sedan förra gången`}</h3>
+      <h3>{t('{n} annonser, bäst matchning först', { n: hits.length })}{hits.some(h => h.isNew) && ' · ' + t('{n} nya sedan förra gången', { n: hits.filter(h => h.isNew).length })}</h3>
       {error && <p className="error">{error}</p>}
       <ul className="hits">
         {hits.map(hit => (
           <li key={hit.id}>
             <Score value={hit.score} large />
             <div>
-              {hit.isNew && <span className="new">Ny</span>}
+              {hit.isNew && <span className="new">{t('Ny')}</span>}
               <a href={hit.url} target="_blank" rel="noreferrer"><b>{hit.title}</b></a>
               <div className="meta">
-                {[hit.employer, hit.municipality, hit.deadline && `sök senast ${date(hit.deadline)}`].filter(Boolean).join(' · ')}
+                {[hit.employer, hit.municipality, hit.deadline && t('sök senast {date}', { date: new Date(hit.deadline).toLocaleDateString(locale) })].filter(Boolean).join(' · ')}
               </div>
               <div>{hit.reason}</div>
             </div>
             <div className="hit-actions">
               <button className="secondary" disabled={busy !== null} onClick={() => write(hit)}>
-                {busy === hit.id ? 'Startar…' : 'Skriv brev'}
+                {busy === hit.id ? t('Startar…') : t('Skriv brev')}
               </button>
-              <button className="secondary" disabled={saved.has(hit.id)} onClick={() => save(hit)} title="Spara på ansökningstavlan">
-                {saved.has(hit.id) ? '✓ Sparad' : '⭐ Spara'}
+              <button className="secondary" disabled={saved.has(hit.id)} onClick={() => save(hit)} title={t('Spara på ansökningstavlan')}>
+                {saved.has(hit.id) ? '✓ ' + t('Sparad') : '⭐ ' + t('Spara')}
               </button>
             </div>
           </li>

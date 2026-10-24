@@ -2,6 +2,7 @@ using JobbAgent.Api.Data;
 using JobbAgent.Api.Models;
 using JobbAgent.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Endpoints;
 
@@ -24,7 +25,7 @@ public static class ApplicationEndpoints
             if (request.LetterRunId is { } runId)
             {
                 letter = await db.Runs.FirstOrDefaultAsync(r => r.Id == runId && r.Kind == RunKind.Letter, ct);
-                if (letter is null) return Results.BadRequest(new { error = "Brevet finns inte." });
+                if (letter is null) return Results.BadRequest(new { error = L("Brevet finns inte.", "The letter does not exist.") });
             }
             var platsbankenId = Clean(request.PlatsbankenId, 50) ?? letter?.PlatsbankenId;
 
@@ -53,7 +54,7 @@ public static class ApplicationEndpoints
                 LetterRunId = letter?.Id,
             };
             if (application.Title.Length == 0)
-                return Results.BadRequest(new { error = "Ange jobbets titel." });
+                return Results.BadRequest(new { error = L("Ange jobbets titel.", "Enter the job title.") });
             SetStage(application, request.Stage ?? Stage.Saved);
 
             db.Applications.Add(application);
@@ -66,9 +67,9 @@ public static class ApplicationEndpoints
             var application = await db.Applications.FirstOrDefaultAsync(a => a.Id == id, ct);
             if (application is null) return Results.NotFound();
             var title = Clean(request.Title, 300);
-            if (title is null) return Results.BadRequest(new { error = "Ange jobbets titel." });
+            if (title is null) return Results.BadRequest(new { error = L("Ange jobbets titel.", "Enter the job title.") });
             if (request.Notes?.Length > MaxNotesLength)
-                return Results.BadRequest(new { error = $"Anteckningarna får vara högst {MaxNotesLength} tecken." });
+                return Results.BadRequest(new { error = L($"Anteckningarna får vara högst {MaxNotesLength} tecken.", $"The notes can be at most {MaxNotesLength} characters.") });
 
             application.Title = title;
             application.Company = Clean(request.Company, 200);

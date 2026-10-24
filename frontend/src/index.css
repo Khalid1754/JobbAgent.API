@@ -4,15 +4,24 @@
   --accent: #0f766e; --accent-dark: #115e59; --danger: #dc2626; --soft: #e6f4f1; --ok: #16a34a;
   --banner-bg: #fef3c7; --banner-text: #78350f;
 }
+/* Mörkt läge: följer datorn om man inte har valt själv (data-theme sätts av knappen i sidhuvudet). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark; --bg: #0f1117; --card: #181b23; --text: #e7eaee; --muted: #9aa4af; --border: #2a2f3a;
     --accent: #2dd4bf; --accent-dark: #14b8a6; --soft: #10302c; --banner-bg: #3a2e0b; --banner-text: #fde68a;
   }
 }
+:root[data-theme="dark"] {
+  color-scheme: dark; --bg: #0f1117; --card: #181b23; --text: #e7eaee; --muted: #9aa4af; --border: #2a2f3a;
+  --accent: #2dd4bf; --accent-dark: #14b8a6; --soft: #10302c; --banner-bg: #3a2e0b; --banner-text: #fde68a;
+}
 * { box-sizing: border-box; }
 body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
 header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; }
+.prefs { display: flex; gap: 2px; align-items: center; margin-left: auto; align-self: center; }
+.prefs button.icon { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 18px; }
+.prefs button.icon:hover { background: var(--soft); }
+.prefs .lang { font-size: 13px; font-weight: 700; letter-spacing: .5px; min-width: 36px; }
 h1 { margin: 0; font-size: 24px; } h1 span { color: var(--accent); }
 h2 { margin: 0 0 12px; font-size: 20px; } h3 { margin: 16px 0 8px; font-size: 16px; }
 main { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
@@ -75,7 +84,9 @@ details .markdown { margin-top: 6px; padding: 8px 12px; border-left: 3px solid v
 .intro ol { padding-left: 20px; }
 
 /* JobbAgent */
-:root { --warn: #b45309; --on-accent: #fff; } @media (prefers-color-scheme: dark) { :root { --warn: #fbbf24; --on-accent: #04201d; } }
+:root { --warn: #b45309; --on-accent: #fff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --warn: #fbbf24; --on-accent: #04201d; } }
+:root[data-theme="dark"] { --warn: #fbbf24; --on-accent: #04201d; }
 input[type=checkbox] { width: auto; }
 .card.form { display: grid; gap: 12px; }
 .card.form h2, .card.form p { margin: 0; }

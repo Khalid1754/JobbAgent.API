@@ -2,6 +2,7 @@ using JobbAgent.Api.Data;
 using JobbAgent.Api.Models;
 using JobbAgent.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Endpoints;
 
@@ -20,7 +21,7 @@ public static class WatchEndpoints
         watches.MapPost("/", async (SaveWatchRequest request, JobbAgentDbContext db, CancellationToken ct) =>
         {
             if (await db.Watches.CountAsync(ct) >= MaxWatches)
-                return Results.BadRequest(new { error = $"Du kan ha högst {MaxWatches} bevakningar." });
+                return Results.BadRequest(new { error = L($"Du kan ha högst {MaxWatches} bevakningar.", $"You can have at most {MaxWatches} saved searches.") });
             if (await Cvs.CheckAsync(db, request.CvId, ct) is { } cvError && request.CvId is not null)
                 return Results.BadRequest(new { error = cvError });
             var watch = new Watch();
@@ -49,6 +50,7 @@ public static class WatchEndpoints
             if (await Cvs.CheckAsync(db, watch.CvId, ct) is { } cvError)
                 return Results.BadRequest(new { error = cvError });
             watch.LastRunAt = DateTime.UtcNow;
+            watch.UiLanguage = Language.Current.Code();
             return await RunEndpoints.EnqueueAsync(db, queue, Watches.CreateRun(watch), ct);
         });
 
@@ -80,5 +82,6 @@ public static class WatchEndpoints
         watch.MinScore = Math.Clamp(request.MinScore ?? watch.MinScore, 0, 100);
         watch.Enabled = request.Enabled ?? watch.Enabled;
         watch.CvId = request.CvId;
+        watch.UiLanguage = Language.Current.Code();
     }
 }
