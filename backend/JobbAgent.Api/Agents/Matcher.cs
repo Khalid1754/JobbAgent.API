@@ -18,8 +18,10 @@ public class Matcher(ILlm llm)
         You are Matchare in a team of AI agents that help a job seeker. Compare the CV with the
         job's requirements. For each requirement the CV supports, quote or paraphrase the evidence
         from the CV; never invent experience. List requirements the CV does not show as gaps. Score
-        the fit 0–100 and list what a cover letter should highlight, most important first. Write in
-        Swedish.
+        the fit 0–100 and list what a cover letter should highlight, most important first.
+        Also suggest 3–5 concrete ways to tailor the CV for this job: what to move up, rephrase with
+        the ad's own words, or make more visible. Only rearrange and rephrase what the CV already
+        says; never suggest adding experience the person does not have. Write in Swedish.
         """;
 
     public const int DescriptionLength = 700;
@@ -64,13 +66,17 @@ public class Matcher(ILlm llm)
         return match with { Score = Math.Clamp(match.Score, 0, 100) };
     }
 
-    public static string Format(MatchResult m) => $"""
+    // CV-tipsen visas för användaren men behövs inte av Skribenten och Intervjucoachen.
+    public static string Format(MatchResult m, bool withCvTips = true) => $"""
         **Matchning: {m.Score} %**
 
         {m.Summary}
 
-        {(m.Matches.Length > 0 ? "**Det här passar**\n" + string.Join("\n", m.Matches.Select(x => $"- {x.Requirement}: {x.Evidence}")) + "\n\n" : "")}{(m.Gaps.Length > 0 ? "**Det här saknas**\n" + string.Join("\n", m.Gaps.Select(g => $"- {g}")) + "\n\n" : "")}{(m.Highlights.Length > 0 ? "**Lyft fram i brevet**\n" + string.Join("\n", m.Highlights.Select(h => $"- {h}")) : "")}
+        {(m.Matches.Length > 0 ? "**Det här passar**\n" + string.Join("\n", m.Matches.Select(x => $"- {x.Requirement}: {x.Evidence}")) + "\n\n" : "")}{(m.Gaps.Length > 0 ? "**Det här saknas**\n" + string.Join("\n", m.Gaps.Select(g => $"- {g}")) + "\n\n" : "")}{(m.Highlights.Length > 0 ? "**Lyft fram i brevet**\n" + string.Join("\n", m.Highlights.Select(h => $"- {h}")) + "\n\n" : "")}{(withCvTips ? FormatTips(m.CvTips ?? []) : "")}
         """.Trim();
+
+    private static string FormatTips(CvTip[] tips) => tips.Length == 0 ? "" :
+        "**Anpassa CV:t**\n" + string.Join("\n", tips.Select(t => $"- {t.Section}: {t.Suggestion}" + (t.Example.Length > 0 ? $" (\"{t.Example}\")" : "")));
 
     public static string FormatHits(IReadOnlyList<SearchHit> hits) => hits.Count == 0
         ? "Inga annonser hittades."

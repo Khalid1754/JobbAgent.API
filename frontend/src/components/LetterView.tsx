@@ -75,6 +75,26 @@ export default function LetterView({ run, application, onSaveJob, onPrepareInter
         </div>
       )}
 
+      {match?.cvTips && match.cvTips.length > 0 && (
+        <div className="card">
+          <h3>Anpassa ditt CV för jobbet</h3>
+          <p className="muted">Matcharens förslag bygger bara på det som redan står i ditt CV.</p>
+          <ul className="tips">
+            {match.cvTips.map(t => (
+              <li key={t.section + t.suggestion}>
+                <span className="chip-label">{t.section}</span> {t.suggestion}
+                {t.example && (
+                  <div className="example">
+                    <q>{t.example}</q>
+                    <button className="secondary small" onClick={() => navigator.clipboard.writeText(t.example).then(() => flash('Kopierat!'))}>Kopiera</button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="card">
         <div className="actions">
           <h3>Personligt brev</h3>

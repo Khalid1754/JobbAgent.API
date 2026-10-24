@@ -46,7 +46,7 @@ public class Coach(ILlm llm)
             {Interpreter.Format(requirements)}
 
             Matchare's analysis:
-            {Matcher.Format(match)}
+            {Matcher.Format(match, withCvTips: false)}
             """, ct);
 
     public static string Format(InterviewPrep p) =>

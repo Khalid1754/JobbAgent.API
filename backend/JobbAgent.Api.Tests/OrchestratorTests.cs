@@ -92,6 +92,17 @@ public class OrchestratorTests
         Assert.Equal("sv", run.Language);
         Assert.Equal(82, run.MatchScore);
         Assert.Contains(Cv, _llm.Prompts[1]);
+        var tip = Assert.Single(RunDto.From(run).Match!.CvTips);
+        Assert.Equal("Profil", tip.Section);
+        Assert.Contains("Anpassa CV:t", run.Steps.Single(s => s.Agent == "Matchare" && s.Kind == StepKind.Completed).Detail);
+    }
+
+    [Fact]
+    public void OldMatchWithoutCvTips_CanStillBeShown()
+    {
+        var old = new Run { MatchJson = """{"score":70,"summary":"Ok","matches":[],"gaps":[],"highlights":[]}""" };
+        var match = RunDto.From(old).Match!;
+        Assert.Contains("70 %", Matcher.Format(match));
     }
 
     [Fact]

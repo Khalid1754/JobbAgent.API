@@ -94,6 +94,7 @@ export interface Match {
   matches: { requirement: string; evidence: string }[]
   gaps: string[]
   highlights: string[]
+  cvTips?: { section: string; suggestion: string; example: string }[]
 }
 
 export interface InterviewQuestion {

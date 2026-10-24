@@ -31,7 +31,7 @@ public class FakeLlm : ILlm
             "Sökare" => """{"queries":["systemutvecklare","backendutvecklare"],"summary":"Utvecklarjobb med C#."}""",
             "Matchare" when system.Contains("each job ad") =>
                 """{"ads":[{"index":1,"score":40,"reason":"Delvis."},{"index":2,"score":90,"reason":"Passar bra."}]}""",
-            "Matchare" => """{"score":82,"summary":"Bra match.","matches":[{"requirement":"C#","evidence":"Tre år med C#"}],"gaps":["Azure"],"highlights":["C#"]}""",
+            "Matchare" => """{"score":82,"summary":"Bra match.","matches":[{"requirement":"C#","evidence":"Tre år med C#"}],"gaps":["Azure"],"highlights":["C#"],"cvTips":[{"section":"Profil","suggestion":"Nämn API:er först","example":"Backendutvecklare som bygger API:er i C#"}]}""",
             "Tolkare" => """
                 {"title":"Backendutvecklare","company":"Acme AB","location":"Stockholm","summary":"Bygga API:er.",
                  "mustHave":["C#"],"niceToHave":["Azure"],"responsibilities":["API"],"traits":["Noggrann"],

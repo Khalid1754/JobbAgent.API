@@ -146,3 +146,7 @@ ol.questions ul { margin: 6px 0; padding-left: 18px; }
 .chip-label { font-size: 12px; background: var(--soft); color: var(--accent); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
 blockquote { margin: 6px 0 0; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; font-size: 14px; }
 .card.columns { display: grid; }
+ul.tips { padding-left: 0; list-style: none; display: grid; gap: 10px; margin: 0; }
+.example { display: flex; gap: 8px; align-items: center; margin-top: 4px; font-style: italic; }
+.example q { flex: 1; }
+button.small { padding: 2px 8px; font-size: 12px; }
