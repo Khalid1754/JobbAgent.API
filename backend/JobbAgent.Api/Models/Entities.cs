@@ -1,0 +1,66 @@
+namespace JobbAgent.Api.Models;
+
+public enum RunStatus { Queued, Running, Completed, Failed }
+
+// Search = agenterna letar jobb i Platsbanken. Letter = agenterna skriver ett personligt brev till en annons.
+public enum RunKind { Search, Letter }
+
+// Vad som hände i ett steg: en agent börjar, blir klar, lämnar över till nästa eller misslyckas.
+public enum StepKind { Started, Completed, Handoff, Failed }
+
+// Ditt CV. Det finns bara en profil; agenterna läser den vid varje körning.
+public class Profile
+{
+    public int Id { get; set; } = 1;
+    public string CvText { get; set; } = "";
+    public string? FileName { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// En körning: antingen en jobbsökning eller ett personligt brev.
+public class Run
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public RunKind Kind { get; set; }
+    public RunStatus Status { get; set; } = RunStatus.Queued;
+    // Rubriken i historiken: annonsens titel eller vad som söktes.
+    public string Title { get; set; } = "";
+    public string? Company { get; set; }
+
+    // Sökning: önskemål från användaren.
+    public string? Location { get; set; }
+    public string? Keywords { get; set; }
+    public bool RemoteOnly { get; set; }
+
+    // Brev: själva annonsen och vilket språk brevet ska skrivas på (auto, sv eller en).
+    public string? AdUrl { get; set; }
+    public string? AdText { get; set; }
+    public string? PlatsbankenId { get; set; }
+    public string Language { get; set; } = "auto";
+
+    // Agenternas resultat, sparat som JSON.
+    public string? HitsJson { get; set; }
+    public string? RequirementsJson { get; set; }
+    public string? MatchJson { get; set; }
+    public int? MatchScore { get; set; }
+    public string? Letter { get; set; }
+
+    public string? Error { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? FinishedAt { get; set; }
+    public List<AgentStep> Steps { get; set; } = [];
+}
+
+public class AgentStep
+{
+    public int Id { get; set; }
+    public Guid RunId { get; set; }
+    public int Sequence { get; set; }
+    public string Agent { get; set; } = "";
+    public string? ToAgent { get; set; }
+    public StepKind Kind { get; set; }
+    public string Summary { get; set; } = "";
+    // Det agenten producerade (Markdown), visas när man fäller ut steget.
+    public string? Detail { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}

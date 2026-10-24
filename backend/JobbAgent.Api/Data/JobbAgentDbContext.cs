@@ -1,0 +1,43 @@
+using JobbAgent.Api.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace JobbAgent.Api.Data;
+
+public class JobbAgentDbContext(DbContextOptions<JobbAgentDbContext> options) : DbContext(options)
+{
+    public DbSet<Profile> Profiles => Set<Profile>();
+    public DbSet<Run> Runs => Set<Run>();
+    public DbSet<AgentStep> Steps => Set<AgentStep>();
+
+    protected override void OnModelCreating(ModelBuilder b)
+    {
+        b.Entity<Profile>(e =>
+        {
+            e.Property(p => p.Id).ValueGeneratedNever();
+            e.Property(p => p.FileName).HasMaxLength(260);
+        });
+        b.Entity<Run>(e =>
+        {
+            e.Property(r => r.Kind).HasConversion<string>().HasMaxLength(20);
+            e.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(r => r.Title).HasMaxLength(300);
+            e.Property(r => r.Company).HasMaxLength(200);
+            e.Property(r => r.Location).HasMaxLength(100);
+            e.Property(r => r.Keywords).HasMaxLength(200);
+            e.Property(r => r.AdUrl).HasMaxLength(1000);
+            e.Property(r => r.PlatsbankenId).HasMaxLength(50);
+            e.Property(r => r.Language).HasMaxLength(10);
+            e.Property(r => r.Error).HasMaxLength(1000);
+            e.HasIndex(r => r.CreatedAt);
+            e.HasMany(r => r.Steps).WithOne().HasForeignKey(s => s.RunId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<AgentStep>(e =>
+        {
+            e.Property(s => s.Agent).HasMaxLength(40);
+            e.Property(s => s.ToAgent).HasMaxLength(40);
+            e.Property(s => s.Kind).HasConversion<string>().HasMaxLength(20);
+            e.Property(s => s.Summary).HasMaxLength(500);
+            e.HasIndex(s => new { s.RunId, s.Sequence }).IsUnique();
+        });
+    }
+}

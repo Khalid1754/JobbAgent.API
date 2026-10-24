@@ -1,0 +1,68 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using JobbAgent.Api.Agents;
+
+namespace JobbAgent.Api.Models;
+
+public record SaveCvRequest(string CvText);
+
+public record ProfileDto(string CvText, string? FileName, DateTime UpdatedAt)
+{
+    public static ProfileDto From(Profile p) => new(p.CvText, p.FileName, p.UpdatedAt);
+}
+
+public record CreateSearchRequest(string? Location, string? Keywords, bool RemoteOnly);
+
+// Annonsen anges på ett av tre sätt: inklistrad text, en länk eller ett Platsbanken-id från en sökning.
+public record CreateLetterRequest(string? AdText, string? AdUrl, string? PlatsbankenId, string? Language);
+
+public record UpdateLetterRequest(string Letter);
+
+public record RunSummaryDto(Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
+    DateTime CreatedAt, DateTime? FinishedAt)
+{
+    public static RunSummaryDto From(Run r) => new(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.CreatedAt, r.FinishedAt);
+}
+
+public record StepDto(int Sequence, string Agent, string? ToAgent, StepKind Kind, string Summary, string? Detail, DateTime CreatedAt)
+{
+    public static StepDto From(AgentStep s) => new(s.Sequence, s.Agent, s.ToAgent, s.Kind, s.Summary, s.Detail, s.CreatedAt);
+}
+
+public record RunDto(
+    Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
+    string? Location, string? Keywords, bool RemoteOnly,
+    string? AdUrl, string? AdText, string Language,
+    IReadOnlyList<SearchHit>? Hits, AdRequirements? Requirements, MatchResult? Match, string? Letter,
+    string? Error, DateTime CreatedAt, DateTime? FinishedAt, IReadOnlyList<StepDto> Steps)
+{
+    public static RunDto From(Run r) => new(
+        r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore,
+        r.Location, r.Keywords, r.RemoteOnly,
+        r.AdUrl, r.AdText, r.Language,
+        Read<List<SearchHit>>(r.HitsJson), Read<AdRequirements>(r.RequirementsJson), Read<MatchResult>(r.MatchJson), r.Letter,
+        r.Error, r.CreatedAt, r.FinishedAt,
+        r.Steps.OrderBy(s => s.Sequence).Select(StepDto.From).ToList());
+
+    private static T? Read<T>(string? json) where T : class =>
+        json is null ? null : JsonSerializer.Deserialize<T>(json, ApiJson.Options);
+}
+
+// Det som skickas live till webbläsaren: antingen ett nytt steg eller en ny status för körningen.
+public record RunEvent(string Type, StepDto? Step = null, RunStatus? Status = null, string? Error = null)
+{
+    public static RunEvent ForStep(AgentStep s) => new("step", Step: StepDto.From(s));
+    public static RunEvent ForStatus(Run r) => new("status", Status: r.Status, Error: r.Error);
+}
+
+public static class ApiJson
+{
+    public static readonly JsonSerializerOptions Options = Configure(new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+    public static JsonSerializerOptions Configure(JsonSerializerOptions o)
+    {
+        o.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        o.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        return o;
+    }
+}
