@@ -18,7 +18,7 @@ public record Ranking(RankedAd[] Ads);
 // En annons i sökresultatet, med Matcharens bedömning.
 public record SearchHit(
     string Id, string Title, string? Employer, string? Municipality, string Url,
-    DateTime? Deadline, int Score, string Reason);
+    DateTime? Deadline, int Score, string Reason, bool IsNew = false);
 
 public record AdRequirements(
     [property: Description("Tjänstens titel.")] string Title,
@@ -36,12 +36,18 @@ public record RequirementMatch(
     [property: Description("Kravet ur annonsen.")] string Requirement,
     [property: Description("Vad i CV:t som visar det. Bara sådant som faktiskt står i CV:t.")] string Evidence);
 
+public record CvTip(
+    [property: Description("Vilken del av CV:t det gäller, t.ex. \"Profil\", \"Erfarenhet\" eller \"Kompetenser\".")] string Section,
+    [property: Description("Vad som ska ändras och varför, kopplat till ett krav i annonsen.")] string Suggestion,
+    [property: Description("Förslag på ny formulering, byggd bara på det som redan står i CV:t. Tom sträng om det inte passar.")] string Example);
+
 public record MatchResult(
     [property: Description("Hur väl CV:t passar annonsen, 0–100.")] int Score,
     [property: Description("Två meningar om matchningen.")] string Summary,
     RequirementMatch[] Matches,
     [property: Description("Krav som CV:t inte visar.")] string[] Gaps,
-    [property: Description("Det brevet bör lyfta fram, viktigast först.")] string[] Highlights);
+    [property: Description("Det brevet bör lyfta fram, viktigast först.")] string[] Highlights,
+    [property: Description("3–5 sätt att anpassa CV:t för just det här jobbet.")] CvTip[] CvTips);
 
 public record Review(
     bool Approved,

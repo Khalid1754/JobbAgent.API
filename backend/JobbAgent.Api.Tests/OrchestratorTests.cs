@@ -26,7 +26,7 @@ public class OrchestratorTests
             .AddSingleton<ILlm>(_llm)
             .AddSingleton<IJobBoard>(_board)
             .AddSingleton<Searcher>().AddSingleton<Interpreter>().AddSingleton<Matcher>()
-            .AddSingleton<Writer>().AddSingleton<Reviewer>()
+            .AddSingleton<Writer>().AddSingleton<Reviewer>().AddSingleton<Coach>()
             .AddSingleton<RunEvents>().AddSingleton<RunOrchestrator>()
             .BuildServiceProvider();
     }
@@ -92,6 +92,17 @@ public class OrchestratorTests
         Assert.Equal("sv", run.Language);
         Assert.Equal(82, run.MatchScore);
         Assert.Contains(Cv, _llm.Prompts[1]);
+        var tip = Assert.Single(RunDto.From(run).Match!.CvTips);
+        Assert.Equal("Profil", tip.Section);
+        Assert.Contains("Anpassa CV:t", run.Steps.Single(s => s.Agent == "Matchare" && s.Kind == StepKind.Completed).Detail);
+    }
+
+    [Fact]
+    public void OldMatchWithoutCvTips_CanStillBeShown()
+    {
+        var old = new Run { MatchJson = """{"score":70,"summary":"Ok","matches":[],"gaps":[],"highlights":[]}""" };
+        var match = RunDto.From(old).Match!;
+        Assert.Contains("70 %", Matcher.Format(match));
     }
 
     [Fact]
@@ -134,6 +145,35 @@ public class OrchestratorTests
         Assert.Equal("Matchare gick sönder", run.Error);
         var last = run.Steps.OrderBy(s => s.Sequence).Last();
         Assert.Equal(("Matchare", StepKind.Failed), (last.Agent, last.Kind));
+    }
+
+    [Fact]
+    public async Task Interview_FromAd_ReadsAndMatchesFirst()
+    {
+        var run = await ExecuteAsync(new Run { Kind = RunKind.Interview, Title = "Intervju: Ny", AdText = "Vi söker en backendutvecklare.", Language = "auto" });
+
+        Assert.Equal(RunStatus.Completed, run.Status);
+        Assert.Equal(["Tolkare", "Matchare", "Intervjucoach"], _llm.Calls);
+        Assert.Equal(["Tolkare->Matchare", "Matchare->Intervjucoach"], Handoffs(run));
+        Assert.Equal("Intervju: Backendutvecklare", run.Title);
+        var prep = RunDto.From(run).Interview!;
+        Assert.Equal("Berätta om ett API du byggt.", Assert.Single(prep.Questions).Question);
+    }
+
+    [Fact]
+    public async Task Interview_FromLetter_ReusesRequirementsAndMatch()
+    {
+        var letter = await ExecuteAsync(LetterRun());
+        _llm.Calls.Clear();
+        var run = await ExecuteAsync(new Run
+        {
+            Kind = RunKind.Interview, Title = "Intervju: Backendutvecklare", Language = "en",
+            RequirementsJson = letter.RequirementsJson, MatchJson = letter.MatchJson,
+        }, withCv: false);
+
+        Assert.Equal(["Intervjucoach"], _llm.Calls);
+        Assert.Contains("Write everything in English", _llm.Prompts.Last());
+        Assert.Contains(run.Steps, s => s.Summary == "Använder kraven från brevet");
     }
 
     [Fact]

@@ -44,7 +44,7 @@ public class Writer(ILlm llm)
             Contact person: {(requirements.ContactPerson.Length > 0 ? requirements.ContactPerson : "unknown")}
 
             Matchare's analysis:
-            {Matcher.Format(match)}
+            {Matcher.Format(match, withCvTips: false)}
             {revision}
             """, null, ct);
         return letter.Trim();

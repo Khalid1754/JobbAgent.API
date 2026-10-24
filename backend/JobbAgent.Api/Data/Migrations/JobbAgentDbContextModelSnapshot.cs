@@ -69,18 +69,112 @@ namespace JobbAgent.Api.Data.Migrations
                     b.ToTable("Steps");
                 });
 
+            modelBuilder.Entity("JobbAgent.Api.Models.JobApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("AppliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Company")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("InterviewAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LetterRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("MatchScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("PlatsbankenId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Stage")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("StageChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LetterRunId");
+
+                    b.HasIndex("PlatsbankenId");
+
+                    b.ToTable("Applications");
+                });
+
             modelBuilder.Entity("JobbAgent.Api.Models.Profile", b =>
                 {
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("CvText")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("FileName")
                         .HasMaxLength(260)
                         .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("FullName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -103,12 +197,18 @@ namespace JobbAgent.Api.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<Guid?>("ApplicationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Company")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("CvId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Error")
                         .HasMaxLength(1000)
@@ -118,6 +218,9 @@ namespace JobbAgent.Api.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("HitsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InterviewJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Keywords")
@@ -157,6 +260,9 @@ namespace JobbAgent.Api.Data.Migrations
                     b.Property<string>("RequirementsJson")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("SourceRunId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -167,11 +273,75 @@ namespace JobbAgent.Api.Data.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<string>("UiLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("sv");
+
+                    b.Property<Guid?>("WatchId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt");
 
                     b.ToTable("Runs");
+                });
+
+            modelBuilder.Entity("JobbAgent.Api.Models.Watch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CvId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Keywords")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("LastRunAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LastRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("MinScore")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NewMatches")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RemoteOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SeenAdIdsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UiLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("sv");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Watches");
                 });
 
             modelBuilder.Entity("JobbAgent.Api.Models.AgentStep", b =>

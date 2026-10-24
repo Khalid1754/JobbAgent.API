@@ -1,4 +1,5 @@
 import type { RunKind, Step } from './api'
+import { msg } from './i18n'
 
 export interface Agent {
   name: string
@@ -8,21 +9,30 @@ export interface Agent {
 
 export const AGENTS: Record<RunKind, Agent[]> = {
   search: [
-    { name: 'Sökare', icon: '🔎', label: 'Söker i Platsbanken' },
-    { name: 'Matchare', icon: '🎯', label: 'Jämför med ditt CV' },
+    { name: 'Sökare', icon: '🔎', label: msg('Söker i Platsbanken') },
+    { name: 'Matchare', icon: '🎯', label: msg('Jämför med ditt CV') },
   ],
   letter: [
-    { name: 'Tolkare', icon: '📄', label: 'Läser annonsen' },
-    { name: 'Matchare', icon: '🎯', label: 'Jämför med ditt CV' },
-    { name: 'Skribent', icon: '✍️', label: 'Skriver brevet' },
-    { name: 'Granskare', icon: '✅', label: 'Granskar' },
+    { name: 'Tolkare', icon: '📄', label: msg('Läser annonsen') },
+    { name: 'Matchare', icon: '🎯', label: msg('Jämför med ditt CV') },
+    { name: 'Skribent', icon: '✍️', label: msg('Skriver brevet') },
+    { name: 'Granskare', icon: '✅', label: msg('Granskar') },
+  ],
+  interview: [
+    { name: 'Tolkare', icon: '📄', label: msg('Läser annonsen') },
+    { name: 'Matchare', icon: '🎯', label: msg('Hittar styrkor och luckor') },
+    { name: 'Intervjucoach', icon: '🗣️', label: msg('Förbereder frågor och svar') },
   ],
 }
 
 export type AgentState = 'waiting' | 'working' | 'done' | 'failed'
 
 const ICONS: Record<string, string> = Object.fromEntries(Object.values(AGENTS).flat().map(a => [a.name, a.icon]))
+export const KIND_ICON: Record<RunKind, string> = { search: '🔎', letter: '✉️', interview: '🗣️' }
 export const iconFor = (agent: string) => ICONS[agent] ?? '🤖'
+
+// Agenternas namn kommer från servern på svenska och översätts när de visas.
+export const AGENT_NAMES = [msg('Sökare'), msg('Matchare'), msg('Tolkare'), msg('Skribent'), msg('Granskare'), msg('Intervjucoach')]
 
 // En agents läge avgörs av det senaste steget den själv gjorde.
 export function agentStates(kind: RunKind, steps: Step[]): Record<string, AgentState> {

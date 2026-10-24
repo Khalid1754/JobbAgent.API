@@ -4,15 +4,24 @@
   --accent: #0f766e; --accent-dark: #115e59; --danger: #dc2626; --soft: #e6f4f1; --ok: #16a34a;
   --banner-bg: #fef3c7; --banner-text: #78350f;
 }
+/* Mörkt läge: följer datorn om man inte har valt själv (data-theme sätts av knappen i sidhuvudet). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark; --bg: #0f1117; --card: #181b23; --text: #e7eaee; --muted: #9aa4af; --border: #2a2f3a;
     --accent: #2dd4bf; --accent-dark: #14b8a6; --soft: #10302c; --banner-bg: #3a2e0b; --banner-text: #fde68a;
   }
 }
+:root[data-theme="dark"] {
+  color-scheme: dark; --bg: #0f1117; --card: #181b23; --text: #e7eaee; --muted: #9aa4af; --border: #2a2f3a;
+  --accent: #2dd4bf; --accent-dark: #14b8a6; --soft: #10302c; --banner-bg: #3a2e0b; --banner-text: #fde68a;
+}
 * { box-sizing: border-box; }
 body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
 header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; }
+.prefs { display: flex; gap: 2px; align-items: center; margin-left: auto; align-self: center; }
+.prefs button.icon { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 18px; }
+.prefs button.icon:hover { background: var(--soft); }
+.prefs .lang { font-size: 13px; font-weight: 700; letter-spacing: .5px; min-width: 36px; }
 h1 { margin: 0; font-size: 24px; } h1 span { color: var(--accent); }
 h2 { margin: 0 0 12px; font-size: 20px; } h3 { margin: 16px 0 8px; font-size: 16px; }
 main { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
@@ -75,7 +84,9 @@ details .markdown { margin-top: 6px; padding: 8px 12px; border-left: 3px solid v
 .intro ol { padding-left: 20px; }
 
 /* JobbAgent */
-:root { --warn: #b45309; --on-accent: #fff; } @media (prefers-color-scheme: dark) { :root { --warn: #fbbf24; --on-accent: #04201d; } }
+:root { --warn: #b45309; --on-accent: #fff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --warn: #fbbf24; --on-accent: #04201d; } }
+:root[data-theme="dark"] { --warn: #fbbf24; --on-accent: #04201d; }
 input[type=checkbox] { width: auto; }
 .card.form { display: grid; gap: 12px; }
 .card.form h2, .card.form p { margin: 0; }
@@ -94,6 +105,7 @@ nav.tabs, .tabs { display: grid; gap: 6px; }
 .tabs button { background: var(--card); color: var(--text); border: 1px solid var(--border); font-weight: 500; text-align: left; }
 .tabs button.active { border-color: var(--accent); background: var(--soft); color: var(--accent); font-weight: 600; }
 .tabs.small { grid-auto-flow: column; justify-content: start; }
+.tabs.small.wrap { display: flex; flex-wrap: wrap; }
 .tabs.small button { padding: 6px 12px; }
 
 ul.runs .icon { flex: none; }
@@ -116,3 +128,50 @@ p.ad { white-space: pre-wrap; font-size: 14px; }
 .card a { color: var(--accent); }
 ul.hits a { color: var(--text); }
 textarea.letter { background: var(--card); }
+
+/* Ansökningstavlan */
+.board-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.board-head h2, .board-head p { margin: 0; }
+.board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-items: start; }
+@media (max-width: 1100px) { .board { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
+.column { background: color-mix(in srgb, var(--border) 35%, transparent); border: 2px dashed transparent; border-radius: 12px; padding: 8px; display: grid; gap: 8px; min-height: 120px; align-content: start; }
+.column.over { border-color: var(--accent); background: var(--soft); }
+.column h3 { margin: 0 4px; font-size: 14px; }
+button.job { display: grid; gap: 4px; text-align: left; background: var(--card); color: var(--text); border: 1px solid var(--border); font-weight: 400; padding: 10px; cursor: grab; }
+button.job:hover { background: var(--card); border-color: var(--accent); }
+.job-title { font-weight: 600; font-size: 14px; overflow-wrap: break-word; hyphens: auto; }
+.job-foot { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.next { font-size: 12px; color: var(--muted); }
+.next.urgent { color: var(--warn); font-weight: 600; }
+.hit-actions { display: grid; gap: 6px; }
+@media (max-width: 600px) { .hit-actions { grid-column: 2; display: flex; } }
+dialog { border: 1px solid var(--border); border-radius: 12px; padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--card); color: var(--text); }
+dialog::backdrop { background: rgb(0 0 0 / .4); }
+dialog form { border: none; }
+dialog h2 { margin: 0; }
+.spacer { flex: 1; }
+
+/* Intervjuförberedelse */
+ol.questions { padding-left: 22px; display: grid; gap: 10px; }
+ol.questions ul { margin: 6px 0; padding-left: 18px; }
+.chip-label { font-size: 12px; background: var(--soft); color: var(--accent); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+blockquote { margin: 6px 0 0; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; font-size: 14px; }
+.card.columns { display: grid; }
+ul.tips { padding-left: 0; list-style: none; display: grid; gap: 10px; margin: 0; }
+.example { display: flex; gap: 8px; align-items: center; margin-top: 4px; font-style: italic; }
+.example q { flex: 1; }
+button.small { padding: 2px 8px; font-size: 12px; }
+
+/* Bevakningar */
+ul.watches { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+ul.watches li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--border); }
+ul.watches li > div { flex: 1; min-width: 180px; }
+ul.watches li.paused { opacity: .6; }
+ul.watches button { padding: 6px 12px; }
+button.danger-text { color: var(--danger); border-color: var(--border); }
+select.inline { width: auto; padding: 2px 4px; margin-left: 4px; }
+.new { font-size: 11px; font-weight: 700; color: var(--on-accent); background: var(--accent); border-radius: 999px; padding: 1px 6px; margin-right: 6px; vertical-align: middle; }
+.tabs .count { float: right; font-size: 12px; font-weight: 700; color: var(--on-accent); background: var(--accent); border-radius: 999px; padding: 0 8px; }
+fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px 12px; margin: 0; }
+legend { font-size: 13px; color: var(--muted); padding: 0 4px; }

@@ -34,10 +34,13 @@ builder.Services.AddSingleton<Interpreter>();
 builder.Services.AddSingleton<Matcher>();
 builder.Services.AddSingleton<Writer>();
 builder.Services.AddSingleton<Reviewer>();
+builder.Services.AddSingleton<Coach>();
 builder.Services.AddSingleton<RunEvents>();
 builder.Services.AddSingleton<RunQueue>();
 builder.Services.AddSingleton<RunOrchestrator>();
 builder.Services.AddHostedService<RunWorker>();
+builder.Services.AddSingleton<WatchScheduler>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<WatchScheduler>());
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["http://localhost:5173"])
@@ -47,17 +50,25 @@ var app = builder.Build();
 
 await DatabaseStartup.MigrateAsync(app.Services, app.Logger);
 
+// Språket först, så att även felmeddelandena blir på rätt språk.
+app.Use((context, next) =>
+{
+    Language.Current = Language.Parse(context.Request.Headers.AcceptLanguage);
+    return next(context);
+});
 app.UseExceptionHandler(handler => handler.Run(async context =>
 {
     context.Response.StatusCode = 500;
-    await context.Response.WriteAsJsonAsync(new { error = "Något gick fel på servern." });
+    await context.Response.WriteAsJsonAsync(new { error = Language.L("Något gick fel på servern.", "Something went wrong on the server.") });
 }));
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseCors();
 
-app.MapProfileEndpoints();
+app.MapCvEndpoints();
 app.MapRunEndpoints();
+app.MapApplicationEndpoints();
+app.MapWatchEndpoints();
 app.MapFallbackToFile("index.html");
 
 app.Run();

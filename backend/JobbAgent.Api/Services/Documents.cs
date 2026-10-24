@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
+using static JobbAgent.Api.Services.Language;
 
 namespace JobbAgent.Api.Services;
 
@@ -23,16 +24,16 @@ public static class CvReader
                 ".pdf" => ReadPdf(file),
                 ".docx" => ReadDocx(file),
                 ".txt" or ".md" => new StreamReader(file, Encoding.UTF8).ReadToEnd(),
-                _ => throw new DocumentException("Ladda upp CV:t som PDF, Word (.docx) eller textfil."),
+                _ => throw new DocumentException(L("Ladda upp CV:t som PDF, Word (.docx) eller textfil.", "Upload the CV as PDF, Word (.docx) or a text file.")),
             };
             text = Text.Tidy(text);
             if (text.Length < 50)
-                throw new DocumentException("Hittade nästan ingen text i filen. Är det en skannad bild? Klistra in texten i stället.");
+                throw new DocumentException(L("Hittade nästan ingen text i filen. Är det en skannad bild? Klistra in texten i stället.", "Found almost no text in the file. Is it a scanned image? Paste the text instead."));
             return text;
         }
         catch (Exception e) when (e is not DocumentException)
         {
-            throw new DocumentException("Filen kunde inte läsas. Prova att spara om den eller klistra in texten.");
+            throw new DocumentException(L("Filen kunde inte läsas. Prova att spara om den eller klistra in texten.", "The file could not be read. Try saving it again or paste the text."));
         }
     }
 
@@ -48,7 +49,7 @@ public static class CvReader
     private static string ReadDocx(Stream file)
     {
         using var zip = new ZipArchive(file, ZipArchiveMode.Read);
-        var entry = zip.GetEntry("word/document.xml") ?? throw new DocumentException("Word-filen saknar text.");
+        var entry = zip.GetEntry("word/document.xml") ?? throw new DocumentException(L("Word-filen saknar text.", "The Word file has no text."));
         using var stream = entry.Open();
         XNamespace w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
         var paragraphs = XDocument.Load(stream).Descendants(w + "p")
@@ -75,16 +76,16 @@ public partial class AdReader(HttpClient http)
         {
             using var response = await http.GetAsync(uri, ct);
             if (!response.IsSuccessStatusCode)
-                throw new DocumentException($"Sidan svarade {(int)response.StatusCode}. Klistra in annonstexten i stället.");
+                throw new DocumentException(L($"Sidan svarade {(int)response.StatusCode}. Klistra in annonstexten i stället.", $"The page responded {(int)response.StatusCode}. Paste the ad text instead."));
             html = await response.Content.ReadAsStringAsync(ct);
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
-            throw new DocumentException("Kunde inte öppna länken. Klistra in annonstexten i stället.");
+            throw new DocumentException(L("Kunde inte öppna länken. Klistra in annonstexten i stället.", "Could not open the link. Paste the ad text instead."));
         }
         var text = HtmlToText(html);
         if (text.Length < 200)
-            throw new DocumentException("Sidan innehöll nästan ingen text (den kanske kräver inloggning). Klistra in annonstexten i stället.");
+            throw new DocumentException(L("Sidan innehöll nästan ingen text (den kanske kräver inloggning). Klistra in annonstexten i stället.", "The page had almost no text (it may require login). Paste the ad text instead."));
         return text.Length > MaxLength ? text[..MaxLength] : text;
     }
 

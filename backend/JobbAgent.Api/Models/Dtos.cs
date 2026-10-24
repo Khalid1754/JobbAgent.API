@@ -4,24 +4,59 @@ using JobbAgent.Api.Agents;
 
 namespace JobbAgent.Api.Models;
 
-public record SaveCvRequest(string CvText);
+public record SaveCvRequest(string CvText, string? Name = null, string? FullName = null, string? Email = null, string? Phone = null,
+    string? City = null, string? Link = null);
 
-public record ProfileDto(string CvText, string? FileName, DateTime UpdatedAt)
+public record CvDto(int Id, string Name, bool IsDefault, string CvText, string? FileName, string? FullName, string? Email,
+    string? Phone, string? City, string? Link, DateTime UpdatedAt)
 {
-    public static ProfileDto From(Profile p) => new(p.CvText, p.FileName, p.UpdatedAt);
+    public static CvDto From(Profile p) =>
+        new(p.Id, p.Name, p.IsDefault, p.CvText, p.FileName, p.FullName, p.Email, p.Phone, p.City, p.Link, p.UpdatedAt);
 }
 
-public record CreateSearchRequest(string? Location, string? Keywords, bool RemoteOnly);
+public record CreateSearchRequest(string? Location, string? Keywords, bool RemoteOnly, int? CvId = null);
 
 // Annonsen anges på ett av tre sätt: inklistrad text, en länk eller ett Platsbanken-id från en sökning.
-public record CreateLetterRequest(string? AdText, string? AdUrl, string? PlatsbankenId, string? Language);
+public record CreateLetterRequest(string? AdText, string? AdUrl, string? PlatsbankenId, string? Language, int? CvId = null);
 
 public record UpdateLetterRequest(string Letter);
 
-public record RunSummaryDto(Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
-    DateTime CreatedAt, DateTime? FinishedAt)
+// Intervjuförberedelse utgår från ett brev eller från ett jobb på tavlan.
+public record CreateInterviewRequest(Guid? LetterRunId, Guid? ApplicationId, int? CvId = null);
+
+// Nytt jobb på tavlan. Kommer det från ett brev räcker LetterRunId, resten hämtas från brevet.
+public record CreateApplicationRequest(
+    string? Title, string? Company, string? Location, string? Url, string? PlatsbankenId,
+    DateTime? Deadline, int? MatchScore, Guid? LetterRunId, Stage? Stage);
+
+public record UpdateApplicationRequest(
+    string Title, string? Company, string? Location, string? Url, DateTime? Deadline,
+    Stage Stage, string? Notes, DateTime? AppliedAt, DateTime? InterviewAt);
+
+public record ApplicationDto(
+    Guid Id, string Title, string? Company, string? Location, string? Url, string? PlatsbankenId,
+    DateTime? Deadline, int? MatchScore, Guid? LetterRunId, Stage Stage, string? Notes,
+    DateTime? AppliedAt, DateTime? InterviewAt, DateTime CreatedAt, DateTime StageChangedAt)
 {
-    public static RunSummaryDto From(Run r) => new(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.CreatedAt, r.FinishedAt);
+    public static ApplicationDto From(JobApplication a) => new(
+        a.Id, a.Title, a.Company, a.Location, a.Url, a.PlatsbankenId, a.Deadline, a.MatchScore, a.LetterRunId,
+        a.Stage, a.Notes, a.AppliedAt, a.InterviewAt, a.CreatedAt, a.StageChangedAt);
+}
+
+public record RunSummaryDto(Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
+    Guid? SourceRunId, Guid? ApplicationId, Guid? WatchId, DateTime CreatedAt, DateTime? FinishedAt)
+{
+    public static RunSummaryDto From(Run r) =>
+        new(r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore, r.SourceRunId, r.ApplicationId, r.WatchId, r.CreatedAt, r.FinishedAt);
+}
+
+public record SaveWatchRequest(string? Location, string? Keywords, bool RemoteOnly, int? MinScore, bool? Enabled, int? CvId = null);
+
+public record WatchDto(Guid Id, string Title, string? Location, string? Keywords, bool RemoteOnly, int MinScore, bool Enabled,
+    int? CvId, DateTime? LastRunAt, Guid? LastRunId, int NewMatches)
+{
+    public static WatchDto From(Watch w) => new(w.Id, Services.Watches.Title(w.Keywords, w.Location, w.RemoteOnly), w.Location, w.Keywords,
+        w.RemoteOnly, w.MinScore, w.Enabled, w.CvId, w.LastRunAt, w.LastRunId, w.NewMatches);
 }
 
 public record StepDto(int Sequence, string Agent, string? ToAgent, StepKind Kind, string Summary, string? Detail, DateTime CreatedAt)
@@ -32,16 +67,16 @@ public record StepDto(int Sequence, string Agent, string? ToAgent, StepKind Kind
 public record RunDto(
     Guid Id, RunKind Kind, string Title, string? Company, RunStatus Status, int? MatchScore,
     string? Location, string? Keywords, bool RemoteOnly,
-    string? AdUrl, string? AdText, string Language,
+    string? AdUrl, string? AdText, string? PlatsbankenId, string Language, int? CvId,
     IReadOnlyList<SearchHit>? Hits, AdRequirements? Requirements, MatchResult? Match, string? Letter,
-    string? Error, DateTime CreatedAt, DateTime? FinishedAt, IReadOnlyList<StepDto> Steps)
+    InterviewPrep? Interview, Guid? SourceRunId, Guid? ApplicationId, string? Error, DateTime CreatedAt, DateTime? FinishedAt, IReadOnlyList<StepDto> Steps)
 {
     public static RunDto From(Run r) => new(
         r.Id, r.Kind, r.Title, r.Company, r.Status, r.MatchScore,
         r.Location, r.Keywords, r.RemoteOnly,
-        r.AdUrl, r.AdText, r.Language,
+        r.AdUrl, r.AdText, r.PlatsbankenId, r.Language, r.CvId,
         Read<List<SearchHit>>(r.HitsJson), Read<AdRequirements>(r.RequirementsJson), Read<MatchResult>(r.MatchJson), r.Letter,
-        r.Error, r.CreatedAt, r.FinishedAt,
+        Read<InterviewPrep>(r.InterviewJson), r.SourceRunId, r.ApplicationId, r.Error, r.CreatedAt, r.FinishedAt,
         r.Steps.OrderBy(s => s.Sequence).Select(StepDto.From).ToList());
 
     private static T? Read<T>(string? json) where T : class =>
