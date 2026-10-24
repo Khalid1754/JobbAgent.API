@@ -5,7 +5,7 @@ namespace JobbAgent.Api.Services;
 // En jobbannons, i den form agenterna behöver.
 public record JobAd(
     string Id, string Title, string? Employer, string? Municipality, string? Occupation,
-    string Description, string Url, DateTime? Deadline, DateTime? Published, bool Remote = false);
+    string Description, string Url, DateTime? Deadline, DateTime? Published, bool Remote = false, string Source = "Platsbanken");
 
 public interface IJobBoard
 {

@@ -8,7 +8,8 @@ varje annons och skriver ett personligt brev som bara bygger på det som faktisk
 ## Två sätt att använda den
 
 **🔎 Hitta jobb åt mig.** Ange gärna ort, egna sökord och om du vill jobba på distans. Sökaren läser ditt CV,
-tar fram sökord och söker i Arbetsförmedlingens Platsbanken. Matcharen ger varje annons en poäng (0–100 %)
+tar fram sökord och söker i Arbetsförmedlingens Platsbanken, och om du vill även bland annonser från LinkedIn,
+Indeed, Glassdoor m.fl. via JSearch (se nedan). Matcharen ger varje annons en poäng (0–100 %)
 och en kort motivering. Klicka på *Skriv brev* vid den annons du vill söka.
 
 **✉️ Egen annons.** Klistra in en länk eller själva annonstexten. Platsbanken-länkar läses via
@@ -40,6 +41,19 @@ kontaktuppgifter överst. Allt sparas i historiken.
 
 ![Engelska och mörkt läge](docs/engelska-morkt.png)
 
+## Fler jobbsajter: LinkedIn, Indeed m.fl.
+
+LinkedIn och Indeed har inget öppet sök-API och tillåter inte att man skrapar deras sidor. JobbAgent använder därför
+[JSearch](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch), som bygger på Google for Jobs och samlar annonser
+från LinkedIn, Indeed, Glassdoor och arbetsgivarnas egna sidor.
+
+1. Skapa ett gratis konto på [RapidAPI](https://rapidapi.com) och prenumerera på JSearch (Basic, gratis).
+2. Kopiera din `X-RapidAPI-Key` till `RAPIDAPI_KEY` i `.env` och kör `start.bat` igen.
+
+Gratisnivån räcker till ungefär 200 anrop i månaden (en sökning använder 1–3). Varje träff visar vilken sajt den kommer
+från, samma jobb i flera källor visas bara en gång, och tar kvoten slut söker agenterna i Platsbanken som vanligt.
+Utan nyckel används bara Platsbanken.
+
 ## Agenterna
 
 | Agent | Gör | Lämnar över till |
@@ -68,7 +82,7 @@ SQL Server och skickas live till webbläsaren med Server-Sent Events.
 
 - **Backend:** .NET 10 Minimal API, EF Core, SQL Server, bakgrundskö för körningar
 - **AI:** Groq (`openai/gpt-oss-120b`) med structured outputs (JSON-schema genererat från C#-records)
-- **Jobbannonser:** [JobSearch API](https://jobsearch.api.jobtechdev.se) från Arbetsförmedlingen/JobTech
+- **Jobbannonser:** [JobSearch API](https://jobsearch.api.jobtechdev.se) från Arbetsförmedlingen/JobTech och valfritt [JSearch](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch)
 - **CV:** PDF (PdfPig), Word (.docx) eller vanlig text
 - **Brev som fil:** Word (.docx) och PDF (PdfPig med inbäddat typsnitt, Caladea under OFL)
 - **Frontend:** React 19 + Vite + TypeScript

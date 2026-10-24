@@ -20,8 +20,8 @@ public static class RunEndpoints
     {
         var api = app.MapGroup("/api");
 
-        api.MapGet("/status", async (ILlm llm, JobbAgentDbContext db, CancellationToken ct) =>
-            new { aiEnabled = llm.Enabled, hasCv = await db.Profiles.AnyAsync(ct) });
+        api.MapGet("/status", async (ILlm llm, JSearchClient jsearch, JobbAgentDbContext db, CancellationToken ct) =>
+            new { aiEnabled = llm.Enabled, hasCv = await db.Profiles.AnyAsync(ct), jsearch = jsearch.Enabled });
 
         api.MapPost("/searches", async (CreateSearchRequest request, JobbAgentDbContext db, RunQueue queue, CancellationToken ct) =>
         {
@@ -223,11 +223,11 @@ public static class RunEndpoints
         try
         {
             return await board.GetAsync(id, ct)
-                ?? throw new DocumentException(L("Annonsen finns inte längre i Platsbanken.", "The ad is no longer in Platsbanken."));
+                ?? throw new DocumentException(L("Annonsen finns inte längre.", "The ad is no longer available."));
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or JsonException && !ct.IsCancellationRequested)
         {
-            throw new DocumentException(L("Kunde inte hämta annonsen från Platsbanken. Försök igen eller klistra in texten.", "Could not fetch the ad from Platsbanken. Try again or paste the text."));
+            throw new DocumentException(L("Kunde inte hämta annonsen. Försök igen eller klistra in texten.", "Could not fetch the ad. Try again or paste the text."));
         }
     }
 

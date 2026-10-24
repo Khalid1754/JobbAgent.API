@@ -46,6 +46,8 @@ export const en: Record<string, string> = {
   'Sökaren': 'The Searcher',
   'läser ditt CV, tar fram sökord och söker bland annonserna i Arbetsförmedlingens Platsbanken. Sedan ger':
     'reads your CV, comes up with search terms and searches the ads in Platsbanken, the Swedish Public Employment Service job board. Then',
+  'läser ditt CV, tar fram sökord och söker i Platsbanken och bland annonser från LinkedIn, Indeed med flera. Sedan ger':
+    'reads your CV, comes up with search terms and searches Platsbanken and ads from LinkedIn, Indeed and more. Then',
   'Matcharen': 'the Matcher',
   'varje annons en poäng utifrån hur väl du passar.': 'gives each ad a score based on how well you fit.',
   'Ort (valfritt)': 'Location (optional)',
@@ -63,6 +65,7 @@ export const en: Record<string, string> = {
   '{n} nya sedan förra gången': '{n} new since last time',
   'Ny': 'New',
   'sök senast {date}': 'apply by {date}',
+  'via {source}': 'via {source}',
   'Skriv brev': 'Write letter',
   'Spara på ansökningstavlan': 'Save to the application board',
   'Sparad': 'Saved',

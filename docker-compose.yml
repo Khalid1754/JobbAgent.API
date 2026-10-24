@@ -27,6 +27,7 @@ services:
       ConnectionStrings__JobbAgent: "Server=sqlserver,1433;Database=JobbAgent;User Id=sa;Password=${SA_PASSWORD:-JobbAgent_Dev123!};TrustServerCertificate=True"
       GROQ_API_KEY: "${GROQ_API_KEY:-}"
       Groq__Model: "${GROQ_MODEL:-openai/gpt-oss-120b}"
+      RAPIDAPI_KEY: "${RAPIDAPI_KEY:-}"
     ports:
       - "5108:8080"
     depends_on:

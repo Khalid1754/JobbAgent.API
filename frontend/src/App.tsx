@@ -25,7 +25,7 @@ export default function App() {
   const [runs, setRuns] = useState<RunSummary[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('search')
-  const [status, setStatus] = useState({ aiEnabled: true, hasCv: true })
+  const [status, setStatus] = useState<{ aiEnabled: boolean; hasCv: boolean; jsearch?: boolean }>({ aiEnabled: true, hasCv: true })
   const [error, setError] = useState<string | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
   const [adding, setAdding] = useState(false)
@@ -156,7 +156,7 @@ export default function App() {
               applications={applications} onSaveJob={saveJob} onPrepareInterview={prepareInterview} cvs={cvs} />
           ) : tab === 'search' ? (
             <>
-              <SearchForm cvs={cvs} onSearch={search} disabled={!canRun} />
+              <SearchForm cvs={cvs} onSearch={search} disabled={!canRun} moreSources={!!status.jsearch} />
               <WatchList watches={watches} onOpen={select} onRun={runWatch} onToggle={toggleWatch} onDelete={deleteWatch} />
             </>
           ) : tab === 'letter' ? (
